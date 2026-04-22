@@ -14,16 +14,305 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      applications: {
+        Row: {
+          applied_at: string | null
+          company: string
+          cover_letter: string | null
+          created_at: string
+          id: string
+          job_id: string | null
+          job_title: string
+          job_url: string | null
+          match_score: number | null
+          next_action_at: string | null
+          notes: string | null
+          status: Database["public"]["Enums"]["application_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string | null
+          company: string
+          cover_letter?: string | null
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          job_title: string
+          job_url?: string | null
+          match_score?: number | null
+          next_action_at?: string | null
+          notes?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          applied_at?: string | null
+          company?: string
+          cover_letter?: string | null
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          job_title?: string
+          job_url?: string | null
+          match_score?: number | null
+          next_action_at?: string | null
+          notes?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cv_analyses: {
+        Row: {
+          created_at: string
+          cv_text: string | null
+          gaps: Json | null
+          id: string
+          language: string | null
+          market_positioning: string | null
+          recommendations: Json | null
+          score: number | null
+          strengths: Json | null
+          summary: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          cv_text?: string | null
+          gaps?: Json | null
+          id?: string
+          language?: string | null
+          market_positioning?: string | null
+          recommendations?: Json | null
+          score?: number | null
+          strengths?: Json | null
+          summary?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          cv_text?: string | null
+          gaps?: Json | null
+          id?: string
+          language?: string | null
+          market_positioning?: string | null
+          recommendations?: Json | null
+          score?: number | null
+          strengths?: Json | null
+          summary?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      jobs: {
+        Row: {
+          company: string
+          company_logo_url: string | null
+          country_code: string | null
+          created_at: string
+          description: string | null
+          employment_type: Database["public"]["Enums"]["employment_type"] | null
+          external_id: string | null
+          id: string
+          is_active: boolean | null
+          location: string | null
+          market: Database["public"]["Enums"]["market_type"] | null
+          posted_at: string | null
+          posted_by: string | null
+          required_skills: string[] | null
+          salary_currency: string | null
+          salary_max: number | null
+          salary_min: number | null
+          source_name: string | null
+          source_url: string | null
+          title: string
+          updated_at: string
+          work_type: Database["public"]["Enums"]["work_type"] | null
+        }
+        Insert: {
+          company: string
+          company_logo_url?: string | null
+          country_code?: string | null
+          created_at?: string
+          description?: string | null
+          employment_type?:
+            | Database["public"]["Enums"]["employment_type"]
+            | null
+          external_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          location?: string | null
+          market?: Database["public"]["Enums"]["market_type"] | null
+          posted_at?: string | null
+          posted_by?: string | null
+          required_skills?: string[] | null
+          salary_currency?: string | null
+          salary_max?: number | null
+          salary_min?: number | null
+          source_name?: string | null
+          source_url?: string | null
+          title: string
+          updated_at?: string
+          work_type?: Database["public"]["Enums"]["work_type"] | null
+        }
+        Update: {
+          company?: string
+          company_logo_url?: string | null
+          country_code?: string | null
+          created_at?: string
+          description?: string | null
+          employment_type?:
+            | Database["public"]["Enums"]["employment_type"]
+            | null
+          external_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          location?: string | null
+          market?: Database["public"]["Enums"]["market_type"] | null
+          posted_at?: string | null
+          posted_by?: string | null
+          required_skills?: string[] | null
+          salary_currency?: string | null
+          salary_max?: number | null
+          salary_min?: number | null
+          source_name?: string | null
+          source_url?: string | null
+          title?: string
+          updated_at?: string
+          work_type?: Database["public"]["Enums"]["work_type"] | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          country_code: string | null
+          created_at: string
+          cv_raw_text: string | null
+          cv_url: string | null
+          employability_score: number | null
+          experience_years: number | null
+          full_name: string | null
+          headline: string | null
+          id: string
+          languages: string[] | null
+          links: Json | null
+          location: string | null
+          market_preference: Database["public"]["Enums"]["market_type"] | null
+          preferred_language: string | null
+          skills: string[] | null
+          target_role: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          country_code?: string | null
+          created_at?: string
+          cv_raw_text?: string | null
+          cv_url?: string | null
+          employability_score?: number | null
+          experience_years?: number | null
+          full_name?: string | null
+          headline?: string | null
+          id?: string
+          languages?: string[] | null
+          links?: Json | null
+          location?: string | null
+          market_preference?: Database["public"]["Enums"]["market_type"] | null
+          preferred_language?: string | null
+          skills?: string[] | null
+          target_role?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          country_code?: string | null
+          created_at?: string
+          cv_raw_text?: string | null
+          cv_url?: string | null
+          employability_score?: number | null
+          experience_years?: number | null
+          full_name?: string | null
+          headline?: string | null
+          id?: string
+          languages?: string[] | null
+          links?: Json | null
+          location?: string | null
+          market_preference?: Database["public"]["Enums"]["market_type"] | null
+          preferred_language?: string | null
+          skills?: string[] | null
+          target_role?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "candidate" | "recruiter" | "admin"
+      application_status:
+        | "saved"
+        | "applied"
+        | "interview"
+        | "offer"
+        | "rejected"
+      employment_type:
+        | "full_time"
+        | "part_time"
+        | "contract"
+        | "internship"
+        | "freelance"
+      market_type: "tunisia" | "international" | "both"
+      work_type: "remote" | "hybrid" | "onsite"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +439,24 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["candidate", "recruiter", "admin"],
+      application_status: [
+        "saved",
+        "applied",
+        "interview",
+        "offer",
+        "rejected",
+      ],
+      employment_type: [
+        "full_time",
+        "part_time",
+        "contract",
+        "internship",
+        "freelance",
+      ],
+      market_type: ["tunisia", "international", "both"],
+      work_type: ["remote", "hybrid", "onsite"],
+    },
   },
 } as const
