@@ -9,18 +9,42 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LinkedinRouteImport } from './routes/linkedin'
+import { Route as GeneratorRouteImport } from './routes/generator'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as CvRouteImport } from './routes/cv'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ApplicationsRouteImport } from './routes/applications'
 import { Route as IndexRouteImport } from './routes/index'
 
+const LinkedinRoute = LinkedinRouteImport.update({
+  id: '/linkedin',
+  path: '/linkedin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GeneratorRoute = GeneratorRouteImport.update({
+  id: '/generator',
+  path: '/generator',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CvRoute = CvRouteImport.update({
+  id: '/cv',
+  path: '/cv',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApplicationsRoute = ApplicationsRouteImport.update({
+  id: '/applications',
+  path: '/applications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -31,36 +55,88 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/applications': typeof ApplicationsRoute
   '/auth': typeof AuthRoute
+  '/cv': typeof CvRoute
   '/dashboard': typeof DashboardRoute
+  '/generator': typeof GeneratorRoute
+  '/linkedin': typeof LinkedinRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/applications': typeof ApplicationsRoute
   '/auth': typeof AuthRoute
+  '/cv': typeof CvRoute
   '/dashboard': typeof DashboardRoute
+  '/generator': typeof GeneratorRoute
+  '/linkedin': typeof LinkedinRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/applications': typeof ApplicationsRoute
   '/auth': typeof AuthRoute
+  '/cv': typeof CvRoute
   '/dashboard': typeof DashboardRoute
+  '/generator': typeof GeneratorRoute
+  '/linkedin': typeof LinkedinRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard'
+  fullPaths:
+    | '/'
+    | '/applications'
+    | '/auth'
+    | '/cv'
+    | '/dashboard'
+    | '/generator'
+    | '/linkedin'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard'
-  id: '__root__' | '/' | '/auth' | '/dashboard'
+  to:
+    | '/'
+    | '/applications'
+    | '/auth'
+    | '/cv'
+    | '/dashboard'
+    | '/generator'
+    | '/linkedin'
+  id:
+    | '__root__'
+    | '/'
+    | '/applications'
+    | '/auth'
+    | '/cv'
+    | '/dashboard'
+    | '/generator'
+    | '/linkedin'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApplicationsRoute: typeof ApplicationsRoute
   AuthRoute: typeof AuthRoute
+  CvRoute: typeof CvRoute
   DashboardRoute: typeof DashboardRoute
+  GeneratorRoute: typeof GeneratorRoute
+  LinkedinRoute: typeof LinkedinRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/linkedin': {
+      id: '/linkedin'
+      path: '/linkedin'
+      fullPath: '/linkedin'
+      preLoaderRoute: typeof LinkedinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/generator': {
+      id: '/generator'
+      path: '/generator'
+      fullPath: '/generator'
+      preLoaderRoute: typeof GeneratorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -68,11 +144,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cv': {
+      id: '/cv'
+      path: '/cv'
+      fullPath: '/cv'
+      preLoaderRoute: typeof CvRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/applications': {
+      id: '/applications'
+      path: '/applications'
+      fullPath: '/applications'
+      preLoaderRoute: typeof ApplicationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -87,9 +177,22 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApplicationsRoute: ApplicationsRoute,
   AuthRoute: AuthRoute,
+  CvRoute: CvRoute,
   DashboardRoute: DashboardRoute,
+  GeneratorRoute: GeneratorRoute,
+  LinkedinRoute: LinkedinRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
