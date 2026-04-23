@@ -22,11 +22,14 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
         <div className="flex items-center gap-8">
           <Logo />
-          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-            <Link to="/" className="hover:text-foreground transition-colors">{t("nav.opportunities")}</Link>
-            <Link to="/" className="hover:text-foreground transition-colors">{t("nav.builder")}</Link>
-            <Link to="/" className="hover:text-foreground transition-colors">{t("nav.matching")}</Link>
-          </div>
+          {user && (
+            <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
+              <Link to="/cv" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>CV IA</Link>
+              <Link to="/generator" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>Générateur</Link>
+              <Link to="/linkedin" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>LinkedIn</Link>
+              <Link to="/applications" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>Candidatures</Link>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
           <LangToggle />
