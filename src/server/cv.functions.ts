@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { attachSupabaseAuth } from "@/integrations/supabase/auth-client-middleware";
 import { z } from "zod";
 
 const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
@@ -38,7 +39,7 @@ const AnalyzeInput = z.object({
 });
 
 export const analyzeCv = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .inputValidator((input: unknown) => AnalyzeInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -126,7 +127,7 @@ const GenerateInput = z.object({
 });
 
 export const generateApplication = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .inputValidator((input: unknown) => GenerateInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -195,7 +196,7 @@ const ScrapeInput = z.object({
 });
 
 export const scrapeJobUrl = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .inputValidator((input: unknown) => ScrapeInput.parse(input))
   .handler(async ({ data }) => {
     let html = "";
@@ -267,7 +268,7 @@ const LinkedInInput = z.object({
 });
 
 export const optimizeLinkedIn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .inputValidator((input: unknown) => LinkedInInput.parse(input))
   .handler(async ({ data }) => {
     const langName = data.language === "ar" ? "arabe" : data.language === "en" ? "anglais" : "français";
@@ -315,7 +316,7 @@ const UploadCvInput = z.object({
 });
 
 export const getCvUploadUrl = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .inputValidator((input: unknown) => UploadCvInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
