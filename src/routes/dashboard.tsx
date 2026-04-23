@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/contexts/I18nContext";
-import { Loader2, Upload, Briefcase, Sparkles, TrendingUp, FileText, Wand2, Linkedin, ArrowRight } from "lucide-react";
+import { Loader2, Upload, Briefcase, Sparkles, TrendingUp, FileText, Wand2, Linkedin, ArrowRight, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/dashboard")({
@@ -60,9 +60,28 @@ function DashboardPage() {
           <StatCard icon={Sparkles} label="Analyses CV" value={String(stats.analyses)} tone="cyan" />
         </div>
 
+        {/* Action principale */}
+        <Link
+          to="/jobs"
+          className="block glass-panel rounded-2xl p-6 sm:p-8 mb-6 hover:border-foreground/30 transition-all group relative overflow-hidden"
+          style={{ background: "linear-gradient(135deg, color-mix(in oklab, var(--hyper-cyan) 12%, transparent), color-mix(in oklab, var(--hyper-lime) 8%, transparent))" }}
+        >
+          <div className="flex items-start gap-5">
+            <div className="size-14 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--hyper-cyan)", color: "black" }}>
+              <Search className="size-7" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-bold uppercase tracking-wider text-[color:var(--hyper-cyan)] mb-1">Commence ici</div>
+              <h3 className="font-display text-2xl font-bold mb-1">Trouver des offres adaptées à mon profil</h3>
+              <p className="text-sm text-muted-foreground">L'IA cherche en temps réel sur LinkedIn, Indeed et Welcome to the Jungle. Top 10 offres scorées + génération CV+LM en 1 clic.</p>
+            </div>
+            <ArrowRight className="size-6 text-[color:var(--hyper-cyan)] group-hover:translate-x-1 transition-transform shrink-0 mt-2" />
+          </div>
+        </Link>
+
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           <ModuleCard to="/cv" icon={FileText} title="Analyser mon CV" desc="Score d'employabilité + recommandations IA" tone="cyan" />
-          <ModuleCard to="/generator" icon={Wand2} title="Générer CV+LM" desc="Adapté à chaque offre, optimisé ATS" tone="lime" />
+          <ModuleCard to="/generator" icon={Wand2} title="CV+LM manuel" desc="Coller une URL d'offre ou la description" tone="lime" />
           <ModuleCard to="/linkedin" icon={Linkedin} title="LinkedIn Optimizer" desc="Audit + réécriture profil par IA" tone="cyan" />
           <ModuleCard to="/applications" icon={Briefcase} title="Mes candidatures" desc="Pipeline Kanban : sauvegardé → offre" tone="lime" />
         </div>
