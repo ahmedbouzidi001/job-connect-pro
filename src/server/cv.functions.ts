@@ -39,7 +39,7 @@ const AnalyzeInput = z.object({
 });
 
 export const analyzeCv = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .inputValidator((input: unknown) => AnalyzeInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
