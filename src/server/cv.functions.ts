@@ -127,7 +127,7 @@ const GenerateInput = z.object({
 });
 
 export const generateApplication = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .inputValidator((input: unknown) => GenerateInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -196,7 +196,7 @@ const ScrapeInput = z.object({
 });
 
 export const scrapeJobUrl = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .inputValidator((input: unknown) => ScrapeInput.parse(input))
   .handler(async ({ data }) => {
     let html = "";
@@ -268,7 +268,7 @@ const LinkedInInput = z.object({
 });
 
 export const optimizeLinkedIn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .inputValidator((input: unknown) => LinkedInInput.parse(input))
   .handler(async ({ data }) => {
     const langName = data.language === "ar" ? "arabe" : data.language === "en" ? "anglais" : "français";
@@ -316,7 +316,7 @@ const UploadCvInput = z.object({
 });
 
 export const getCvUploadUrl = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .inputValidator((input: unknown) => UploadCvInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
