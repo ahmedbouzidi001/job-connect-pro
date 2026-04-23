@@ -47,6 +47,21 @@ function GeneratorPage() {
     });
   }, [user]);
 
+  // Pré-remplir depuis la recherche d'emploi (/jobs)
+  useEffect(() => {
+    const stored = sessionStorage.getItem("hireme:prefilled-job");
+    if (!stored) return;
+    try {
+      const j = JSON.parse(stored) as { jobTitle?: string; company?: string; jobUrl?: string; jobDescription?: string };
+      if (j.jobTitle) setJobTitle(j.jobTitle);
+      if (j.company) setCompany(j.company);
+      if (j.jobUrl) setJobUrl(j.jobUrl);
+      if (j.jobDescription) setJobDescription(j.jobDescription);
+      sessionStorage.removeItem("hireme:prefilled-job");
+      toast.success("Offre pré-remplie", { description: `${j.jobTitle} · ${j.company}` });
+    } catch { /* ignore */ }
+  }, []);
+
   const handleScrape = async () => {
     if (!jobUrl) return;
     setScraping(true);

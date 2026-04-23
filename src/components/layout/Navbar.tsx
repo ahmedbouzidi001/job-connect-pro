@@ -24,6 +24,7 @@ export function Navbar() {
           <Logo />
           {user && (
             <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
+              <Link to="/jobs" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>Recherche</Link>
               <Link to="/cv" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>CV IA</Link>
               <Link to="/generator" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>Générateur</Link>
               <Link to="/linkedin" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>LinkedIn</Link>
