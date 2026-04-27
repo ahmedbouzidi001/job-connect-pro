@@ -10,8 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LinkedinRouteImport } from './routes/linkedin'
-import { Route as JobsRouteImport } from './routes/jobs'
-import { Route as GeneratorRouteImport } from './routes/generator'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CvRouteImport } from './routes/cv'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -21,16 +19,6 @@ import { Route as IndexRouteImport } from './routes/index'
 const LinkedinRoute = LinkedinRouteImport.update({
   id: '/linkedin',
   path: '/linkedin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const JobsRoute = JobsRouteImport.update({
-  id: '/jobs',
-  path: '/jobs',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GeneratorRoute = GeneratorRouteImport.update({
-  id: '/generator',
-  path: '/generator',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -65,8 +53,6 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/cv': typeof CvRoute
   '/dashboard': typeof DashboardRoute
-  '/generator': typeof GeneratorRoute
-  '/jobs': typeof JobsRoute
   '/linkedin': typeof LinkedinRoute
 }
 export interface FileRoutesByTo {
@@ -75,8 +61,6 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/cv': typeof CvRoute
   '/dashboard': typeof DashboardRoute
-  '/generator': typeof GeneratorRoute
-  '/jobs': typeof JobsRoute
   '/linkedin': typeof LinkedinRoute
 }
 export interface FileRoutesById {
@@ -86,8 +70,6 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/cv': typeof CvRoute
   '/dashboard': typeof DashboardRoute
-  '/generator': typeof GeneratorRoute
-  '/jobs': typeof JobsRoute
   '/linkedin': typeof LinkedinRoute
 }
 export interface FileRouteTypes {
@@ -98,19 +80,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cv'
     | '/dashboard'
-    | '/generator'
-    | '/jobs'
     | '/linkedin'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/applications'
-    | '/auth'
-    | '/cv'
-    | '/dashboard'
-    | '/generator'
-    | '/jobs'
-    | '/linkedin'
+  to: '/' | '/applications' | '/auth' | '/cv' | '/dashboard' | '/linkedin'
   id:
     | '__root__'
     | '/'
@@ -118,8 +90,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cv'
     | '/dashboard'
-    | '/generator'
-    | '/jobs'
     | '/linkedin'
   fileRoutesById: FileRoutesById
 }
@@ -129,8 +99,6 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CvRoute: typeof CvRoute
   DashboardRoute: typeof DashboardRoute
-  GeneratorRoute: typeof GeneratorRoute
-  JobsRoute: typeof JobsRoute
   LinkedinRoute: typeof LinkedinRoute
 }
 
@@ -141,20 +109,6 @@ declare module '@tanstack/react-router' {
       path: '/linkedin'
       fullPath: '/linkedin'
       preLoaderRoute: typeof LinkedinRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/jobs': {
-      id: '/jobs'
-      path: '/jobs'
-      fullPath: '/jobs'
-      preLoaderRoute: typeof JobsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/generator': {
-      id: '/generator'
-      path: '/generator'
-      fullPath: '/generator'
-      preLoaderRoute: typeof GeneratorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -201,8 +155,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CvRoute: CvRoute,
   DashboardRoute: DashboardRoute,
-  GeneratorRoute: GeneratorRoute,
-  JobsRoute: JobsRoute,
   LinkedinRoute: LinkedinRoute,
 }
 export const routeTree = rootRouteImport
