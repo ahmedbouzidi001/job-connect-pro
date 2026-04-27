@@ -24,10 +24,12 @@ export type Database = {
           job_id: string | null
           job_title: string
           job_url: string | null
+          keywords: string[] | null
           match_score: number | null
           next_action_at: string | null
           notes: string | null
           status: Database["public"]["Enums"]["application_status"]
+          tailored_cv: string | null
           updated_at: string
           user_id: string
         }
@@ -40,10 +42,12 @@ export type Database = {
           job_id?: string | null
           job_title: string
           job_url?: string | null
+          keywords?: string[] | null
           match_score?: number | null
           next_action_at?: string | null
           notes?: string | null
           status?: Database["public"]["Enums"]["application_status"]
+          tailored_cv?: string | null
           updated_at?: string
           user_id: string
         }
@@ -56,10 +60,12 @@ export type Database = {
           job_id?: string | null
           job_title?: string
           job_url?: string | null
+          keywords?: string[] | null
           match_score?: number | null
           next_action_at?: string | null
           notes?: string | null
           status?: Database["public"]["Enums"]["application_status"]
+          tailored_cv?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -72,6 +78,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      conversations: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          id: string
+          recruiter_id: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          id?: string
+          recruiter_id: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          id?: string
+          recruiter_id?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       cv_analyses: {
         Row: {
@@ -194,6 +227,71 @@ export type Database = {
         }
         Relationships: []
       }
+      learning_paths: {
+        Row: {
+          created_at: string
+          gaps: Json | null
+          id: string
+          language: string | null
+          recommendations: Json | null
+          target_role: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          gaps?: Json | null
+          id?: string
+          language?: string | null
+          recommendations?: Json | null
+          target_role?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          gaps?: Json | null
+          id?: string
+          language?: string | null
+          recommendations?: Json | null
+          target_role?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          read_at: string | null
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id: string
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -201,7 +299,9 @@ export type Database = {
           country_code: string | null
           created_at: string
           cv_raw_text: string | null
+          cv_structured: Json | null
           cv_url: string | null
+          email_contact: string | null
           employability_score: number | null
           experience_years: number | null
           full_name: string | null
@@ -211,11 +311,16 @@ export type Database = {
           links: Json | null
           location: string | null
           market_preference: Database["public"]["Enums"]["market_type"] | null
+          phone: string | null
+          preferred_country: string | null
           preferred_language: string | null
+          preferred_template: string | null
+          recruiter_visible: boolean | null
           skills: string[] | null
           target_role: string | null
           updated_at: string
           user_id: string
+          website: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -223,7 +328,9 @@ export type Database = {
           country_code?: string | null
           created_at?: string
           cv_raw_text?: string | null
+          cv_structured?: Json | null
           cv_url?: string | null
+          email_contact?: string | null
           employability_score?: number | null
           experience_years?: number | null
           full_name?: string | null
@@ -233,11 +340,16 @@ export type Database = {
           links?: Json | null
           location?: string | null
           market_preference?: Database["public"]["Enums"]["market_type"] | null
+          phone?: string | null
+          preferred_country?: string | null
           preferred_language?: string | null
+          preferred_template?: string | null
+          recruiter_visible?: boolean | null
           skills?: string[] | null
           target_role?: string | null
           updated_at?: string
           user_id: string
+          website?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -245,7 +357,9 @@ export type Database = {
           country_code?: string | null
           created_at?: string
           cv_raw_text?: string | null
+          cv_structured?: Json | null
           cv_url?: string | null
+          email_contact?: string | null
           employability_score?: number | null
           experience_years?: number | null
           full_name?: string | null
@@ -255,11 +369,16 @@ export type Database = {
           links?: Json | null
           location?: string | null
           market_preference?: Database["public"]["Enums"]["market_type"] | null
+          phone?: string | null
+          preferred_country?: string | null
           preferred_language?: string | null
+          preferred_template?: string | null
+          recruiter_visible?: boolean | null
           skills?: string[] | null
           target_role?: string | null
           updated_at?: string
           user_id?: string
+          website?: string | null
         }
         Relationships: []
       }
