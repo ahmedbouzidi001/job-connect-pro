@@ -9,7 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SkillsRouteImport } from './routes/skills'
 import { Route as LinkedinRouteImport } from './routes/linkedin'
+import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as GeneratorRouteImport } from './routes/generator'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CvRouteImport } from './routes/cv'
@@ -17,9 +19,19 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ApplicationsRouteImport } from './routes/applications'
 import { Route as IndexRouteImport } from './routes/index'
 
+const SkillsRoute = SkillsRouteImport.update({
+  id: '/skills',
+  path: '/skills',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LinkedinRoute = LinkedinRouteImport.update({
   id: '/linkedin',
   path: '/linkedin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JobsRoute = JobsRouteImport.update({
+  id: '/jobs',
+  path: '/jobs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GeneratorRoute = GeneratorRouteImport.update({
@@ -60,7 +72,9 @@ export interface FileRoutesByFullPath {
   '/cv': typeof CvRoute
   '/dashboard': typeof DashboardRoute
   '/generator': typeof GeneratorRoute
+  '/jobs': typeof JobsRoute
   '/linkedin': typeof LinkedinRoute
+  '/skills': typeof SkillsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -69,7 +83,9 @@ export interface FileRoutesByTo {
   '/cv': typeof CvRoute
   '/dashboard': typeof DashboardRoute
   '/generator': typeof GeneratorRoute
+  '/jobs': typeof JobsRoute
   '/linkedin': typeof LinkedinRoute
+  '/skills': typeof SkillsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -79,7 +95,9 @@ export interface FileRoutesById {
   '/cv': typeof CvRoute
   '/dashboard': typeof DashboardRoute
   '/generator': typeof GeneratorRoute
+  '/jobs': typeof JobsRoute
   '/linkedin': typeof LinkedinRoute
+  '/skills': typeof SkillsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -90,7 +108,9 @@ export interface FileRouteTypes {
     | '/cv'
     | '/dashboard'
     | '/generator'
+    | '/jobs'
     | '/linkedin'
+    | '/skills'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -99,7 +119,9 @@ export interface FileRouteTypes {
     | '/cv'
     | '/dashboard'
     | '/generator'
+    | '/jobs'
     | '/linkedin'
+    | '/skills'
   id:
     | '__root__'
     | '/'
@@ -108,7 +130,9 @@ export interface FileRouteTypes {
     | '/cv'
     | '/dashboard'
     | '/generator'
+    | '/jobs'
     | '/linkedin'
+    | '/skills'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -118,16 +142,32 @@ export interface RootRouteChildren {
   CvRoute: typeof CvRoute
   DashboardRoute: typeof DashboardRoute
   GeneratorRoute: typeof GeneratorRoute
+  JobsRoute: typeof JobsRoute
   LinkedinRoute: typeof LinkedinRoute
+  SkillsRoute: typeof SkillsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/skills': {
+      id: '/skills'
+      path: '/skills'
+      fullPath: '/skills'
+      preLoaderRoute: typeof SkillsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/linkedin': {
       id: '/linkedin'
       path: '/linkedin'
       fullPath: '/linkedin'
       preLoaderRoute: typeof LinkedinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jobs': {
+      id: '/jobs'
+      path: '/jobs'
+      fullPath: '/jobs'
+      preLoaderRoute: typeof JobsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/generator': {
@@ -182,7 +222,9 @@ const rootRouteChildren: RootRouteChildren = {
   CvRoute: CvRoute,
   DashboardRoute: DashboardRoute,
   GeneratorRoute: GeneratorRoute,
+  JobsRoute: JobsRoute,
   LinkedinRoute: LinkedinRoute,
+  SkillsRoute: SkillsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
