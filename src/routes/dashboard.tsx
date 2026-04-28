@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/contexts/I18nContext";
-import { Loader2, Upload, Briefcase, Sparkles, TrendingUp, FileText, Wand2, Linkedin, ArrowRight, Search } from "lucide-react";
+import { Loader2, Upload, Briefcase, Sparkles, TrendingUp, FileText, Wand2, Linkedin, ArrowRight, Search, GraduationCap, Users, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/dashboard")({
@@ -79,11 +79,20 @@ function DashboardPage() {
           </div>
         </Link>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Candidat</div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <ModuleCard to="/cv" icon={FileText} title="Analyser mon CV" desc="Score d'employabilité + recommandations IA" tone="cyan" />
-          <ModuleCard to="/generator" icon={Wand2} title="CV+LM manuel" desc="Coller une URL d'offre ou la description" tone="lime" />
-          <ModuleCard to="/linkedin" icon={Linkedin} title="LinkedIn Optimizer" desc="Audit + réécriture profil par IA" tone="cyan" />
-          <ModuleCard to="/applications" icon={Briefcase} title="Mes candidatures" desc="Pipeline Kanban : sauvegardé → offre" tone="lime" />
+          <ModuleCard to="/generator" icon={Wand2} title="CV+LM manuel" desc="3 templates pro avec ton nom en en-tête" tone="lime" />
+          <ModuleCard to="/skills" icon={GraduationCap} title="Skills Hub" desc="Certifs gratuites adaptées à ton profil" tone="cyan" />
+          <ModuleCard to="/linkedin" icon={Linkedin} title="LinkedIn" desc="Audit + réécriture profil par IA" tone="lime" />
+          <ModuleCard to="/applications" icon={Briefcase} title="Mes candidatures" desc="Pipeline Kanban : sauvegardé → offre" tone="cyan" />
+          <ModuleCard to="/messages" icon={MessageSquare} title="Messages" desc="Discute avec les recruteurs" tone="lime" />
+        </div>
+
+        <div className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Recruteur</div>
+        <div className="grid md:grid-cols-2 gap-4">
+          <ModuleCard to="/recruiter" icon={Users} title="Trouver des candidats" desc="Filtres + recherche IA en langage naturel" tone="cyan" />
+          <ModuleCard to="/messages" icon={MessageSquare} title="Messagerie" desc="Contact direct avec les profils" tone="lime" />
         </div>
       </main>
     </div>
