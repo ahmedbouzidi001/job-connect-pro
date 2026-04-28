@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SkillsRouteImport } from './routes/skills'
+import { Route as RecruiterRouteImport } from './routes/recruiter'
 import { Route as LinkedinRouteImport } from './routes/linkedin'
 import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as GeneratorRouteImport } from './routes/generator'
@@ -22,6 +23,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const SkillsRoute = SkillsRouteImport.update({
   id: '/skills',
   path: '/skills',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecruiterRoute = RecruiterRouteImport.update({
+  id: '/recruiter',
+  path: '/recruiter',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LinkedinRoute = LinkedinRouteImport.update({
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/generator': typeof GeneratorRoute
   '/jobs': typeof JobsRoute
   '/linkedin': typeof LinkedinRoute
+  '/recruiter': typeof RecruiterRoute
   '/skills': typeof SkillsRoute
 }
 export interface FileRoutesByTo {
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/generator': typeof GeneratorRoute
   '/jobs': typeof JobsRoute
   '/linkedin': typeof LinkedinRoute
+  '/recruiter': typeof RecruiterRoute
   '/skills': typeof SkillsRoute
 }
 export interface FileRoutesById {
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/generator': typeof GeneratorRoute
   '/jobs': typeof JobsRoute
   '/linkedin': typeof LinkedinRoute
+  '/recruiter': typeof RecruiterRoute
   '/skills': typeof SkillsRoute
 }
 export interface FileRouteTypes {
@@ -110,6 +119,7 @@ export interface FileRouteTypes {
     | '/generator'
     | '/jobs'
     | '/linkedin'
+    | '/recruiter'
     | '/skills'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
     | '/generator'
     | '/jobs'
     | '/linkedin'
+    | '/recruiter'
     | '/skills'
   id:
     | '__root__'
@@ -132,6 +143,7 @@ export interface FileRouteTypes {
     | '/generator'
     | '/jobs'
     | '/linkedin'
+    | '/recruiter'
     | '/skills'
   fileRoutesById: FileRoutesById
 }
@@ -144,6 +156,7 @@ export interface RootRouteChildren {
   GeneratorRoute: typeof GeneratorRoute
   JobsRoute: typeof JobsRoute
   LinkedinRoute: typeof LinkedinRoute
+  RecruiterRoute: typeof RecruiterRoute
   SkillsRoute: typeof SkillsRoute
 }
 
@@ -154,6 +167,13 @@ declare module '@tanstack/react-router' {
       path: '/skills'
       fullPath: '/skills'
       preLoaderRoute: typeof SkillsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recruiter': {
+      id: '/recruiter'
+      path: '/recruiter'
+      fullPath: '/recruiter'
+      preLoaderRoute: typeof RecruiterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/linkedin': {
@@ -224,6 +244,7 @@ const rootRouteChildren: RootRouteChildren = {
   GeneratorRoute: GeneratorRoute,
   JobsRoute: JobsRoute,
   LinkedinRoute: LinkedinRoute,
+  RecruiterRoute: RecruiterRoute,
   SkillsRoute: SkillsRoute,
 }
 export const routeTree = rootRouteImport
