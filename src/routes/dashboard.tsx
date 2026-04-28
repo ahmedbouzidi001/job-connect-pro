@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/contexts/I18nContext";
-import { Loader2, Upload, Briefcase, Sparkles, TrendingUp, FileText, Wand2, Linkedin, ArrowRight, Search } from "lucide-react";
+import { Loader2, Upload, Briefcase, Sparkles, TrendingUp, FileText, Wand2, Linkedin, ArrowRight, Search, GraduationCap, Users, MessageSquare, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardPage,
@@ -15,6 +17,7 @@ function DashboardPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const [stats, setStats] = useState({ score: null as number | null, applications: 0, analyses: 0 });
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
@@ -23,7 +26,7 @@ function DashboardPage() {
   useEffect(() => {
     if (!user) return;
     Promise.all([
-      supabase.from("profiles").select("employability_score").eq("user_id", user.id).single(),
+      supabase.from("profiles").select("employability_score, recruiter_visible").eq("user_id", user.id).single(),
       supabase.from("applications").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       supabase.from("cv_analyses").select("id", { count: "exact", head: true }).eq("user_id", user.id),
     ]).then(([p, a, c]) => {
@@ -32,8 +35,16 @@ function DashboardPage() {
         applications: a.count ?? 0,
         analyses: c.count ?? 0,
       });
+      setVisible(Boolean(p.data?.recruiter_visible));
     });
   }, [user]);
+
+  const toggleVisible = async (v: boolean) => {
+    setVisible(v);
+    const { error } = await supabase.from("profiles").update({ recruiter_visible: v }).eq("user_id", user!.id);
+    if (error) { toast.error(error.message); setVisible(!v); }
+    else toast.success(v ? "Tu es visible par les recruteurs" : "Tu es masqué des recruteurs");
+  };
 
   if (loading || !user) {
     return (
@@ -79,11 +90,31 @@ function DashboardPage() {
           </div>
         </Link>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Candidat</div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <ModuleCard to="/cv" icon={FileText} title="Analyser mon CV" desc="Score d'employabilité + recommandations IA" tone="cyan" />
-          <ModuleCard to="/generator" icon={Wand2} title="CV+LM manuel" desc="Coller une URL d'offre ou la description" tone="lime" />
-          <ModuleCard to="/linkedin" icon={Linkedin} title="LinkedIn Optimizer" desc="Audit + réécriture profil par IA" tone="cyan" />
-          <ModuleCard to="/applications" icon={Briefcase} title="Mes candidatures" desc="Pipeline Kanban : sauvegardé → offre" tone="lime" />
+          <ModuleCard to="/generator" icon={Wand2} title="CV+LM manuel" desc="3 templates pro avec ton nom en en-tête" tone="lime" />
+          <ModuleCard to="/skills" icon={GraduationCap} title="Skills Hub" desc="Certifs gratuites adaptées à ton profil" tone="cyan" />
+          <ModuleCard to="/linkedin" icon={Linkedin} title="LinkedIn" desc="Audit + réécriture profil par IA" tone="lime" />
+          <ModuleCard to="/applications" icon={Briefcase} title="Mes candidatures" desc="Pipeline Kanban : sauvegardé → offre" tone="cyan" />
+          <ModuleCard to="/messages" icon={MessageSquare} title="Messages" desc="Discute avec les recruteurs" tone="lime" />
+        </div>
+
+        <div className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Recruteur</div>
+        <div className="grid md:grid-cols-2 gap-4">
+          <ModuleCard to="/recruiter" icon={Users} title="Trouver des candidats" desc="Filtres + recherche IA en langage naturel" tone="cyan" />
+          <ModuleCard to="/messages" icon={MessageSquare} title="Messagerie" desc="Contact direct avec les profils" tone="lime" />
+        </div>
+
+        <div className="glass-panel rounded-2xl p-5 mt-6 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            {visible ? <Eye className="size-5 text-[color:var(--hyper-cyan)]" /> : <EyeOff className="size-5 text-muted-foreground" />}
+            <div>
+              <div className="font-bold text-sm">Visibilité recruteur</div>
+              <p className="text-xs text-muted-foreground">Autorise les recruteurs à voir ton profil dans leurs recherches.</p>
+            </div>
+          </div>
+          <Switch checked={visible} onCheckedChange={toggleVisible} />
         </div>
       </main>
     </div>
