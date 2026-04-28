@@ -5,7 +5,13 @@ import { LangToggle } from "./LangToggle";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/contexts/I18nContext";
-import { LogOut, LayoutDashboard } from "lucide-react";
+import { LogOut, LayoutDashboard, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function Navbar() {
   const { user, signOut } = useAuth();
@@ -23,12 +29,20 @@ export function Navbar() {
         <div className="flex items-center gap-8">
           <Logo />
           {user && (
-            <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-              <Link to="/jobs" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>Recherche</Link>
-              <Link to="/cv" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>CV IA</Link>
-              <Link to="/generator" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>Générateur</Link>
-              <Link to="/linkedin" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>LinkedIn</Link>
-              <Link to="/applications" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>Candidatures</Link>
+            <div className="hidden md:flex items-center gap-5 text-sm font-medium text-muted-foreground">
+              <Link to="/jobs" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>Offres</Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="inline-flex items-center gap-1 hover:text-foreground transition-colors outline-none">Candidat <ChevronDown className="size-3" /></DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem asChild><Link to="/cv">CV IA</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link to="/generator">Générateur CV+LM</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link to="/skills">Skills Hub</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link to="/linkedin">LinkedIn</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link to="/applications">Mes candidatures</Link></DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Link to="/recruiter" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>Recruteur</Link>
+              <Link to="/messages" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>Messages</Link>
             </div>
           )}
         </div>
