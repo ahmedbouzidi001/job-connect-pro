@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Search, Sparkles, Bookmark, Wand2, ArrowLeft, ArrowRight, Briefcase, MapPin, AlertCircle, Eye } from "lucide-react";
+import { Loader2, Search, Sparkles, Bookmark, Wand2, ArrowLeft, ArrowRight, Briefcase, MapPin, AlertCircle, Eye, Send, Star } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { searchJobs, saveJobAsApplication, scrapeJobContent } from "@/server/jobs.functions";
+import { listPublicInternalJobs, applyToJob } from "@/server/recruiter-jobs.functions";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -27,6 +28,7 @@ const COUNTRIES = [
 
 type ScoredJob = { score: number; title: string; company: string; location: string; summary: string; match_reasons: string[]; keywords: string[]; url: string; source: string; description: string };
 type FullOffer = { title: string; company: string; location: string; contract_type: string; salary: string; missions: string[]; profile: string[]; skills: string[]; benefits: string[]; full_description: string };
+type InternalJob = { id: string; title: string; company: string; location: string | null; country_code: string | null; work_type: string | null; employment_type: string | null; description: string | null; required_skills: string[] | null; salary_min: number | null; salary_max: number | null; salary_currency: string | null };
 
 function JobsPage() {
   const { user, loading } = useAuth();
@@ -34,6 +36,8 @@ function JobsPage() {
   const search = useServerFn(searchJobs);
   const saveJob = useServerFn(saveJobAsApplication);
   const scrape = useServerFn(scrapeJobContent);
+  const listInternal = useServerFn(listPublicInternalJobs);
+  const apply = useServerFn(applyToJob);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [hasCv, setHasCv] = useState<boolean | null>(null);
@@ -50,6 +54,10 @@ function JobsPage() {
   const [viewing, setViewing] = useState<ScoredJob | null>(null);
   const [viewLoading, setViewLoading] = useState(false);
   const [fullOffer, setFullOffer] = useState<FullOffer | null>(null);
+  const [internal, setInternal] = useState<InternalJob[]>([]);
+  const [applyTo, setApplyTo] = useState<InternalJob | null>(null);
+  const [coverMsg, setCoverMsg] = useState("");
+  const [applying, setApplying] = useState(false);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/auth" }); }, [user, loading, navigate]);
   useEffect(() => {
@@ -62,6 +70,19 @@ function JobsPage() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    listInternal({ data: { countryCode: countryCode || null }}).then(r => setInternal((r as { jobs: InternalJob[] }).jobs)).catch(() => {});
+  }, [user, countryCode, listInternal]);
+
+  const submitApply = async () => {
+    if (!applyTo || coverMsg.length < 10) { toast.error("Message trop court"); return; }
+    setApplying(true);
+    try { await apply({ data: { jobId: applyTo.id, coverMessage: coverMsg }}); toast.success("Candidature envoyée"); setApplyTo(null); setCoverMsg(""); }
+    catch (e) { toast.error((e as Error).message); }
+    finally { setApplying(false); }
+  };
 
   const handleSearch = async () => {
     if (!role.trim() || !location.trim()) { toast.error("Indique le poste et le lieu"); return; }
