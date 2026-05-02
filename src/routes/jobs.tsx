@@ -276,6 +276,19 @@ function JobsPage() {
             )}
           </DialogContent>
         </Dialog>
+
+        <Dialog open={!!applyTo} onOpenChange={(o) => !o && setApplyTo(null)}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Postuler : {applyTo?.title}</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">{applyTo?.company} · {applyTo?.location ?? "—"}</p>
+              <textarea value={coverMsg} onChange={e => setCoverMsg(e.target.value)} rows={6} placeholder="Présente-toi en quelques lignes : pourquoi cette offre, ce que tu apportes…" className="w-full rounded-xl border border-border bg-background p-3 text-sm" />
+              <Button onClick={submitApply} disabled={applying || coverMsg.length < 10} className="w-full rounded-xl font-bold">
+                {applying ? <><Loader2 className="size-4 mr-2 animate-spin" /> Envoi…</> : <><Send className="size-4 mr-2" /> Envoyer ma candidature</>}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
