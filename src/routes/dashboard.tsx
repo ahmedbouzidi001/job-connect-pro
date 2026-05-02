@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/contexts/I18nContext";
-import { Loader2, Upload, Briefcase, Sparkles, TrendingUp, FileText, Wand2, Linkedin, ArrowRight, Search, GraduationCap, Users, MessageSquare, Eye, EyeOff } from "lucide-react";
+import { Loader2, Upload, Briefcase, Sparkles, TrendingUp, FileText, Wand2, Linkedin, ArrowRight, Search, GraduationCap, Users, MessageSquare, Eye, EyeOff, User as UserIcon, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -92,16 +92,19 @@ function DashboardPage() {
 
         <div className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Candidat</div>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <ModuleCard to="/profile" icon={UserIcon} title="Mon profil" desc="Identité, photo, expériences, skills" tone="cyan" />
           <ModuleCard to="/cv" icon={FileText} title="Analyser mon CV" desc="Score d'employabilité + recommandations IA" tone="cyan" />
           <ModuleCard to="/generator" icon={Wand2} title="CV+LM manuel" desc="3 templates pro avec ton nom en en-tête" tone="lime" />
           <ModuleCard to="/skills" icon={GraduationCap} title="Skills Hub" desc="Certifs gratuites adaptées à ton profil" tone="cyan" />
           <ModuleCard to="/linkedin" icon={Linkedin} title="LinkedIn" desc="Audit + réécriture profil par IA" tone="lime" />
           <ModuleCard to="/applications" icon={Briefcase} title="Mes candidatures" desc="Pipeline Kanban : sauvegardé → offre" tone="cyan" />
           <ModuleCard to="/messages" icon={MessageSquare} title="Messages" desc="Discute avec les recruteurs" tone="lime" />
+          <ModuleCard to="/pricing" icon={Crown} title="Premium" desc="Auto-apply, exports illimités, priorité" tone="cyan" />
         </div>
 
         <div className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Recruteur</div>
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid md:grid-cols-3 gap-4">
+          <ModuleCard to="/recruiter-jobs" icon={Briefcase} title="Mes offres" desc="Publier & gérer le pipeline candidats" tone="cyan" />
           <ModuleCard to="/recruiter" icon={Users} title="Trouver des candidats" desc="Filtres + recherche IA en langage naturel" tone="cyan" />
           <ModuleCard to="/messages" icon={MessageSquare} title="Messagerie" desc="Contact direct avec les profils" tone="lime" />
         </div>

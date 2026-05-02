@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Search, Sparkles, Bookmark, Wand2, ArrowLeft, ArrowRight, Briefcase, MapPin, AlertCircle, Eye } from "lucide-react";
+import { Loader2, Search, Sparkles, Bookmark, Wand2, ArrowLeft, ArrowRight, Briefcase, MapPin, AlertCircle, Eye, Send, Star } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { searchJobs, saveJobAsApplication, scrapeJobContent } from "@/server/jobs.functions";
+import { listPublicInternalJobs, applyToJob } from "@/server/recruiter-jobs.functions";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -27,6 +28,7 @@ const COUNTRIES = [
 
 type ScoredJob = { score: number; title: string; company: string; location: string; summary: string; match_reasons: string[]; keywords: string[]; url: string; source: string; description: string };
 type FullOffer = { title: string; company: string; location: string; contract_type: string; salary: string; missions: string[]; profile: string[]; skills: string[]; benefits: string[]; full_description: string };
+type InternalJob = { id: string; title: string; company: string; location: string | null; country_code: string | null; work_type: string | null; employment_type: string | null; description: string | null; required_skills: string[] | null; salary_min: number | null; salary_max: number | null; salary_currency: string | null };
 
 function JobsPage() {
   const { user, loading } = useAuth();
@@ -34,6 +36,8 @@ function JobsPage() {
   const search = useServerFn(searchJobs);
   const saveJob = useServerFn(saveJobAsApplication);
   const scrape = useServerFn(scrapeJobContent);
+  const listInternal = useServerFn(listPublicInternalJobs);
+  const apply = useServerFn(applyToJob);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [hasCv, setHasCv] = useState<boolean | null>(null);
@@ -50,6 +54,10 @@ function JobsPage() {
   const [viewing, setViewing] = useState<ScoredJob | null>(null);
   const [viewLoading, setViewLoading] = useState(false);
   const [fullOffer, setFullOffer] = useState<FullOffer | null>(null);
+  const [internal, setInternal] = useState<InternalJob[]>([]);
+  const [applyTo, setApplyTo] = useState<InternalJob | null>(null);
+  const [coverMsg, setCoverMsg] = useState("");
+  const [applying, setApplying] = useState(false);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/auth" }); }, [user, loading, navigate]);
   useEffect(() => {
@@ -62,6 +70,19 @@ function JobsPage() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    listInternal({ data: { countryCode: countryCode || null }}).then(r => setInternal((r as { jobs: InternalJob[] }).jobs)).catch(() => {});
+  }, [user, countryCode, listInternal]);
+
+  const submitApply = async () => {
+    if (!applyTo || coverMsg.length < 10) { toast.error("Message trop court"); return; }
+    setApplying(true);
+    try { await apply({ data: { jobId: applyTo.id, coverMessage: coverMsg }}); toast.success("Candidature envoyée"); setApplyTo(null); setCoverMsg(""); }
+    catch (e) { toast.error((e as Error).message); }
+    finally { setApplying(false); }
+  };
 
   const handleSearch = async () => {
     if (!role.trim() || !location.trim()) { toast.error("Indique le poste et le lieu"); return; }
@@ -116,6 +137,29 @@ function JobsPage() {
             <AlertCircle className="size-5 text-amber-500 mt-0.5 shrink-0" />
             <div className="flex-1 text-sm"><p className="font-bold mb-1">Aucun CV analysé</p><p className="text-muted-foreground"><button onClick={() => navigate({ to: "/cv" })} className="text-[color:var(--hyper-cyan)] underline">Analyse ton CV</button> pour un meilleur matching.</p></div>
           </div>
+        )}
+
+        {internal.length > 0 && (
+          <section className="mb-8">
+            <h2 className="font-bold text-sm mb-3 inline-flex items-center gap-2"><Star className="size-4 text-[color:var(--hyper-lime)]" /> Offres publiées sur HireMe ({internal.length})</h2>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {internal.slice(0, 6).map(j => (
+                <div key={j.id} className="glass-panel rounded-2xl p-4">
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <h3 className="font-bold text-sm truncate">{j.title}</h3>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[color:var(--hyper-lime)]/15 text-[color:var(--hyper-lime)] shrink-0">HireMe</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-2">{j.company} · {j.location ?? "—"}</p>
+                  {j.required_skills && j.required_skills.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {j.required_skills.slice(0, 5).map(s => <span key={s} className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-border">{s}</span>)}
+                    </div>
+                  )}
+                  <Button onClick={() => { setApplyTo(j); setCoverMsg(""); }} size="sm" className="w-full rounded-full font-bold"><Send className="size-3.5 mr-1.5" /> Postuler</Button>
+                </div>
+              ))}
+            </div>
+          </section>
         )}
 
         <div className="flex items-center gap-2 mb-8 text-xs font-bold">
@@ -230,6 +274,19 @@ function JobsPage() {
                 <a href={viewing.url} target="_blank" rel="noopener noreferrer" className="block mt-2 text-[color:var(--hyper-cyan)] underline">Ouvrir dans un nouvel onglet</a>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!applyTo} onOpenChange={(o) => !o && setApplyTo(null)}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Postuler : {applyTo?.title}</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">{applyTo?.company} · {applyTo?.location ?? "—"}</p>
+              <textarea value={coverMsg} onChange={e => setCoverMsg(e.target.value)} rows={6} placeholder="Présente-toi en quelques lignes : pourquoi cette offre, ce que tu apportes…" className="w-full rounded-xl border border-border bg-background p-3 text-sm" />
+              <Button onClick={submitApply} disabled={applying || coverMsg.length < 10} className="w-full rounded-xl font-bold">
+                {applying ? <><Loader2 className="size-4 mr-2 animate-spin" /> Envoi…</> : <><Send className="size-4 mr-2" /> Envoyer ma candidature</>}
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
       </main>
