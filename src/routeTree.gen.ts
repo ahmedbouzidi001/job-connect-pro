@@ -22,6 +22,7 @@ import { Route as CvRouteImport } from './routes/cv'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ApplicationsRouteImport } from './routes/applications'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RecruiterJobsJobIdRouteImport } from './routes/recruiter-jobs.$jobId'
 
 const SkillsRoute = SkillsRouteImport.update({
   id: '/skills',
@@ -88,6 +89,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RecruiterJobsJobIdRoute = RecruiterJobsJobIdRouteImport.update({
+  id: '/$jobId',
+  path: '/$jobId',
+  getParentRoute: () => RecruiterJobsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -101,8 +107,9 @@ export interface FileRoutesByFullPath {
   '/messages': typeof MessagesRoute
   '/profile': typeof ProfileRoute
   '/recruiter': typeof RecruiterRoute
-  '/recruiter-jobs': typeof RecruiterJobsRoute
+  '/recruiter-jobs': typeof RecruiterJobsRouteWithChildren
   '/skills': typeof SkillsRoute
+  '/recruiter-jobs/$jobId': typeof RecruiterJobsJobIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -116,8 +123,9 @@ export interface FileRoutesByTo {
   '/messages': typeof MessagesRoute
   '/profile': typeof ProfileRoute
   '/recruiter': typeof RecruiterRoute
-  '/recruiter-jobs': typeof RecruiterJobsRoute
+  '/recruiter-jobs': typeof RecruiterJobsRouteWithChildren
   '/skills': typeof SkillsRoute
+  '/recruiter-jobs/$jobId': typeof RecruiterJobsJobIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -132,8 +140,9 @@ export interface FileRoutesById {
   '/messages': typeof MessagesRoute
   '/profile': typeof ProfileRoute
   '/recruiter': typeof RecruiterRoute
-  '/recruiter-jobs': typeof RecruiterJobsRoute
+  '/recruiter-jobs': typeof RecruiterJobsRouteWithChildren
   '/skills': typeof SkillsRoute
+  '/recruiter-jobs/$jobId': typeof RecruiterJobsJobIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/recruiter'
     | '/recruiter-jobs'
     | '/skills'
+    | '/recruiter-jobs/$jobId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
     | '/recruiter'
     | '/recruiter-jobs'
     | '/skills'
+    | '/recruiter-jobs/$jobId'
   id:
     | '__root__'
     | '/'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/recruiter'
     | '/recruiter-jobs'
     | '/skills'
+    | '/recruiter-jobs/$jobId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -195,7 +207,7 @@ export interface RootRouteChildren {
   MessagesRoute: typeof MessagesRoute
   ProfileRoute: typeof ProfileRoute
   RecruiterRoute: typeof RecruiterRoute
-  RecruiterJobsRoute: typeof RecruiterJobsRoute
+  RecruiterJobsRoute: typeof RecruiterJobsRouteWithChildren
   SkillsRoute: typeof SkillsRoute
 }
 
@@ -292,8 +304,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/recruiter-jobs/$jobId': {
+      id: '/recruiter-jobs/$jobId'
+      path: '/$jobId'
+      fullPath: '/recruiter-jobs/$jobId'
+      preLoaderRoute: typeof RecruiterJobsJobIdRouteImport
+      parentRoute: typeof RecruiterJobsRoute
+    }
   }
 }
+
+interface RecruiterJobsRouteChildren {
+  RecruiterJobsJobIdRoute: typeof RecruiterJobsJobIdRoute
+}
+
+const RecruiterJobsRouteChildren: RecruiterJobsRouteChildren = {
+  RecruiterJobsJobIdRoute: RecruiterJobsJobIdRoute,
+}
+
+const RecruiterJobsRouteWithChildren = RecruiterJobsRoute._addFileChildren(
+  RecruiterJobsRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -307,7 +338,7 @@ const rootRouteChildren: RootRouteChildren = {
   MessagesRoute: MessagesRoute,
   ProfileRoute: ProfileRoute,
   RecruiterRoute: RecruiterRoute,
-  RecruiterJobsRoute: RecruiterJobsRoute,
+  RecruiterJobsRoute: RecruiterJobsRouteWithChildren,
   SkillsRoute: SkillsRoute,
 }
 export const routeTree = rootRouteImport
