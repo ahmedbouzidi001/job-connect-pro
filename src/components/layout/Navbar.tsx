@@ -5,7 +5,7 @@ import { LangToggle } from "./LangToggle";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/contexts/I18nContext";
-import { LogOut, LayoutDashboard, ChevronDown } from "lucide-react";
+import { LogOut, LayoutDashboard, ChevronDown, Crown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +34,7 @@ export function Navbar() {
               <DropdownMenu>
                 <DropdownMenuTrigger className="inline-flex items-center gap-1 hover:text-foreground transition-colors outline-none">Candidat <ChevronDown className="size-3" /></DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
+                  <DropdownMenuItem asChild><Link to="/profile">Mon profil</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild><Link to="/cv">CV IA</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild><Link to="/generator">Générateur CV+LM</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild><Link to="/skills">Skills Hub</Link></DropdownMenuItem>
@@ -41,8 +42,15 @@ export function Navbar() {
                   <DropdownMenuItem asChild><Link to="/applications">Mes candidatures</Link></DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Link to="/recruiter" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>Recruteur</Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="inline-flex items-center gap-1 hover:text-foreground transition-colors outline-none">Recruteur <ChevronDown className="size-3" /></DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem asChild><Link to="/recruiter-jobs">Mes offres</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link to="/recruiter">Chercher candidats</Link></DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Link to="/messages" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>Messages</Link>
+              <Link to="/pricing" className="hover:text-foreground transition-colors inline-flex items-center gap-1" activeProps={{ className: "text-foreground" }}><Crown className="size-3.5" />Premium</Link>
             </div>
           )}
         </div>
