@@ -200,7 +200,7 @@ export const updateApplication = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => UpdateAppInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const patch: Record<string, unknown> = {};
+    const patch: { status?: "new" | "contacted" | "interview" | "offer" | "rejected" | "withdrawn"; recruiter_notes?: string } = {};
     if (data.status) patch.status = data.status;
     if (typeof data.notes === "string") patch.recruiter_notes = data.notes;
     if (Object.keys(patch).length === 0) return { ok: true };
