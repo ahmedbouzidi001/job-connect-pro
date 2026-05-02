@@ -139,6 +139,29 @@ function JobsPage() {
           </div>
         )}
 
+        {internal.length > 0 && (
+          <section className="mb-8">
+            <h2 className="font-bold text-sm mb-3 inline-flex items-center gap-2"><Star className="size-4 text-[color:var(--hyper-lime)]" /> Offres publiées sur HireMe ({internal.length})</h2>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {internal.slice(0, 6).map(j => (
+                <div key={j.id} className="glass-panel rounded-2xl p-4">
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <h3 className="font-bold text-sm truncate">{j.title}</h3>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[color:var(--hyper-lime)]/15 text-[color:var(--hyper-lime)] shrink-0">HireMe</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-2">{j.company} · {j.location ?? "—"}</p>
+                  {j.required_skills && j.required_skills.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {j.required_skills.slice(0, 5).map(s => <span key={s} className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-border">{s}</span>)}
+                    </div>
+                  )}
+                  <Button onClick={() => { setApplyTo(j); setCoverMsg(""); }} size="sm" className="w-full rounded-full font-bold"><Send className="size-3.5 mr-1.5" /> Postuler</Button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         <div className="flex items-center gap-2 mb-8 text-xs font-bold">
           {[1,2,3].map(n => <div key={n} className="flex items-center gap-2 flex-1"><div className={`size-7 rounded-full flex items-center justify-center ${step>=n?"bg-[color:var(--hyper-cyan)] text-black":"bg-muted text-muted-foreground"}`}>{n}</div><div className={`flex-1 h-0.5 ${step>n?"bg-[color:var(--hyper-cyan)]":"bg-muted"}`} /></div>)}
           <div className={`size-7 rounded-full flex items-center justify-center ${step>=3?"bg-[color:var(--hyper-cyan)] text-black":"bg-muted text-muted-foreground"}`}><Sparkles className="size-3.5" /></div>
