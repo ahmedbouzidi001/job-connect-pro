@@ -148,6 +148,59 @@ export type Database = {
         }
         Relationships: []
       }
+      job_applications: {
+        Row: {
+          candidate_id: string
+          cover_message: string | null
+          created_at: string
+          cv_snapshot: Json | null
+          id: string
+          job_id: string
+          match_reason: string | null
+          match_score: number | null
+          recruiter_id: string
+          recruiter_notes: string | null
+          status: Database["public"]["Enums"]["job_app_status"]
+          updated_at: string
+        }
+        Insert: {
+          candidate_id: string
+          cover_message?: string | null
+          created_at?: string
+          cv_snapshot?: Json | null
+          id?: string
+          job_id: string
+          match_reason?: string | null
+          match_score?: number | null
+          recruiter_id: string
+          recruiter_notes?: string | null
+          status?: Database["public"]["Enums"]["job_app_status"]
+          updated_at?: string
+        }
+        Update: {
+          candidate_id?: string
+          cover_message?: string | null
+          created_at?: string
+          cv_snapshot?: Json | null
+          id?: string
+          job_id?: string
+          match_reason?: string | null
+          match_score?: number | null
+          recruiter_id?: string
+          recruiter_notes?: string | null
+          status?: Database["public"]["Enums"]["job_app_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           company: string
@@ -159,8 +212,10 @@ export type Database = {
           external_id: string | null
           id: string
           is_active: boolean | null
+          is_internal: boolean
           location: string | null
           market: Database["public"]["Enums"]["market_type"] | null
+          nice_to_have_skills: string[] | null
           posted_at: string | null
           posted_by: string | null
           required_skills: string[] | null
@@ -185,8 +240,10 @@ export type Database = {
           external_id?: string | null
           id?: string
           is_active?: boolean | null
+          is_internal?: boolean
           location?: string | null
           market?: Database["public"]["Enums"]["market_type"] | null
+          nice_to_have_skills?: string[] | null
           posted_at?: string | null
           posted_by?: string | null
           required_skills?: string[] | null
@@ -211,8 +268,10 @@ export type Database = {
           external_id?: string | null
           id?: string
           is_active?: boolean | null
+          is_internal?: boolean
           location?: string | null
           market?: Database["public"]["Enums"]["market_type"] | null
+          nice_to_have_skills?: string[] | null
           posted_at?: string | null
           posted_by?: string | null
           required_skills?: string[] | null
@@ -307,6 +366,7 @@ export type Database = {
           full_name: string | null
           headline: string | null
           id: string
+          is_premium: boolean
           languages: string[] | null
           links: Json | null
           location: string | null
@@ -315,6 +375,7 @@ export type Database = {
           preferred_country: string | null
           preferred_language: string | null
           preferred_template: string | null
+          premium_until: string | null
           recruiter_visible: boolean | null
           skills: string[] | null
           target_role: string | null
@@ -336,6 +397,7 @@ export type Database = {
           full_name?: string | null
           headline?: string | null
           id?: string
+          is_premium?: boolean
           languages?: string[] | null
           links?: Json | null
           location?: string | null
@@ -344,6 +406,7 @@ export type Database = {
           preferred_country?: string | null
           preferred_language?: string | null
           preferred_template?: string | null
+          premium_until?: string | null
           recruiter_visible?: boolean | null
           skills?: string[] | null
           target_role?: string | null
@@ -365,6 +428,7 @@ export type Database = {
           full_name?: string | null
           headline?: string | null
           id?: string
+          is_premium?: boolean
           languages?: string[] | null
           links?: Json | null
           location?: string | null
@@ -373,6 +437,7 @@ export type Database = {
           preferred_country?: string | null
           preferred_language?: string | null
           preferred_template?: string | null
+          premium_until?: string | null
           recruiter_visible?: boolean | null
           skills?: string[] | null
           target_role?: string | null
@@ -430,6 +495,13 @@ export type Database = {
         | "contract"
         | "internship"
         | "freelance"
+      job_app_status:
+        | "new"
+        | "contacted"
+        | "interview"
+        | "offer"
+        | "rejected"
+        | "withdrawn"
       market_type: "tunisia" | "international" | "both"
       work_type: "remote" | "hybrid" | "onsite"
     }
@@ -573,6 +645,14 @@ export const Constants = {
         "contract",
         "internship",
         "freelance",
+      ],
+      job_app_status: [
+        "new",
+        "contacted",
+        "interview",
+        "offer",
+        "rejected",
+        "withdrawn",
       ],
       market_type: ["tunisia", "international", "both"],
       work_type: ["remote", "hybrid", "onsite"],
