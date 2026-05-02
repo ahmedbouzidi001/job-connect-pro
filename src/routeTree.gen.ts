@@ -13,6 +13,7 @@ import { Route as SkillsRouteImport } from './routes/skills'
 import { Route as RecruiterJobsRouteImport } from './routes/recruiter-jobs'
 import { Route as RecruiterRouteImport } from './routes/recruiter'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as LinkedinRouteImport } from './routes/linkedin'
 import { Route as JobsRouteImport } from './routes/jobs'
@@ -42,6 +43,11 @@ const RecruiterRoute = RecruiterRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MessagesRoute = MessagesRouteImport.update({
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/jobs': typeof JobsRoute
   '/linkedin': typeof LinkedinRoute
   '/messages': typeof MessagesRoute
+  '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
   '/recruiter': typeof RecruiterRoute
   '/recruiter-jobs': typeof RecruiterJobsRouteWithChildren
@@ -121,6 +128,7 @@ export interface FileRoutesByTo {
   '/jobs': typeof JobsRoute
   '/linkedin': typeof LinkedinRoute
   '/messages': typeof MessagesRoute
+  '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
   '/recruiter': typeof RecruiterRoute
   '/recruiter-jobs': typeof RecruiterJobsRouteWithChildren
@@ -138,6 +146,7 @@ export interface FileRoutesById {
   '/jobs': typeof JobsRoute
   '/linkedin': typeof LinkedinRoute
   '/messages': typeof MessagesRoute
+  '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
   '/recruiter': typeof RecruiterRoute
   '/recruiter-jobs': typeof RecruiterJobsRouteWithChildren
@@ -156,6 +165,7 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/linkedin'
     | '/messages'
+    | '/pricing'
     | '/profile'
     | '/recruiter'
     | '/recruiter-jobs'
@@ -172,6 +182,7 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/linkedin'
     | '/messages'
+    | '/pricing'
     | '/profile'
     | '/recruiter'
     | '/recruiter-jobs'
@@ -188,6 +199,7 @@ export interface FileRouteTypes {
     | '/jobs'
     | '/linkedin'
     | '/messages'
+    | '/pricing'
     | '/profile'
     | '/recruiter'
     | '/recruiter-jobs'
@@ -205,6 +217,7 @@ export interface RootRouteChildren {
   JobsRoute: typeof JobsRoute
   LinkedinRoute: typeof LinkedinRoute
   MessagesRoute: typeof MessagesRoute
+  PricingRoute: typeof PricingRoute
   ProfileRoute: typeof ProfileRoute
   RecruiterRoute: typeof RecruiterRoute
   RecruiterJobsRoute: typeof RecruiterJobsRouteWithChildren
@@ -239,6 +252,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/messages': {
@@ -336,6 +356,7 @@ const rootRouteChildren: RootRouteChildren = {
   JobsRoute: JobsRoute,
   LinkedinRoute: LinkedinRoute,
   MessagesRoute: MessagesRoute,
+  PricingRoute: PricingRoute,
   ProfileRoute: ProfileRoute,
   RecruiterRoute: RecruiterRoute,
   RecruiterJobsRoute: RecruiterJobsRouteWithChildren,
