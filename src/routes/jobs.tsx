@@ -88,7 +88,7 @@ function JobsPage() {
     if (!role.trim() || !location.trim()) { toast.error("Indique le poste et le lieu"); return; }
     setSearching(true); setJobs([]);
     try {
-      const res = await search({ data: { role: role.trim(), location: location.trim(), countryCode, workType, contract, seniority, salaryMin: null, salaryCurrency: "EUR" as const, language: "fr" as const, keywords: keywords.trim() || null, limit: 10 }}) as { jobs: ScoredJob[]; message: string | null };
+      const res = await search({ data: { role: role.trim(), location: location.trim(), countryCode, workType, contract, seniority, salaryMin: null, salaryCurrency: "EUR" as const, language: "fr" as const, keywords: keywords.trim() || null, limit: 50 }}) as { jobs: ScoredJob[]; message: string | null };
       setJobs(res.jobs); setStep(3);
       if (user) await supabase.from("profiles").update({ preferred_country: countryCode }).eq("user_id", user.id);
       if (res.message) toast.info(res.message); else toast.success(`${res.jobs.length} offres scorées`);
