@@ -266,8 +266,11 @@ export const scrapeJobContent = createServerFn({ method: "POST" })
               skills: { type: "array", items: { type: "string" } },
               benefits: { type: "array", items: { type: "string" } },
               full_description: { type: "string", description: "Texte complet propre, sans navigation/cookies" },
+              apply_email: { type: "string", description: "Email de candidature si présent dans l'offre, sinon vide" },
+              apply_url: { type: "string", description: "URL de formulaire de candidature si présent, sinon vide" },
+              recruiter_name: { type: "string", description: "Nom du recruteur/contact si mentionné, sinon vide" },
             },
-            required: ["title", "company", "location", "contract_type", "salary", "missions", "profile", "skills", "benefits", "full_description"],
+            required: ["title", "company", "location", "contract_type", "salary", "missions", "profile", "skills", "benefits", "full_description", "apply_email", "apply_url", "recruiter_name"],
             additionalProperties: false,
           },
         },
@@ -276,5 +279,11 @@ export const scrapeJobContent = createServerFn({ method: "POST" })
     });
     const toolCall = ai.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) throw new Error("Extraction IA échouée");
-    return JSON.parse(toolCall.function.arguments);
+    const parsed = JSON.parse(toolCall.function.arguments);
+    // Fallback regex si l'IA n'a rien trouvé
+    if (!parsed.apply_email) {
+      const m = md.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
+      if (m) parsed.apply_email = m[0];
+    }
+    return parsed;
   });
