@@ -59,22 +59,24 @@ const SearchInput = z.object({
   salaryCurrency: z.enum(["TND", "EUR", "USD"]).default("EUR"),
   language: z.enum(["fr", "en", "ar"]).default("fr"),
   keywords: z.string().max(500).optional().nullable(),
-  limit: z.number().int().min(3).max(15).default(10),
+  limit: z.number().int().min(3).max(100).default(50),
 });
 
 type RawJob = { title: string; company: string; location?: string; url: string; source: string; snippet: string };
 
-function buildQuery(p: z.infer<typeof SearchInput>): string {
-  const parts: string[] = [`"${p.role}"`, p.location];
-  if (p.workType === "remote") parts.push("remote OR télétravail");
-  if (p.workType === "hybrid") parts.push("hybride");
-  if (p.contract === "internship") parts.push("stage OR internship OR alternance");
-  if (p.contract === "contract") parts.push("freelance OR contract");
-  if (p.seniority !== "any") parts.push(p.seniority);
-  if (p.keywords) parts.push(p.keywords);
+function buildQueries(p: z.infer<typeof SearchInput>): string[] {
+  const base: string[] = [`"${p.role}"`, p.location];
+  if (p.workType === "remote") base.push("remote OR télétravail");
+  if (p.workType === "hybrid") base.push("hybride");
+  if (p.contract === "internship") base.push("stage OR internship OR alternance");
+  if (p.contract === "contract") base.push("freelance OR contract");
+  if (p.seniority !== "any") base.push(p.seniority);
+  if (p.keywords) base.push(p.keywords);
   const sources = COUNTRY_SOURCES[p.countryCode] ?? COUNTRY_SOURCES.ANY;
-  parts.push(`(${sources.join(" OR ")})`);
-  return parts.join(" ");
+  // 1 requête par groupe de sources (max 4 sources/requête) pour multiplier la couverture
+  const groups: string[][] = [];
+  for (let i = 0; i < sources.length; i += 3) groups.push(sources.slice(i, i + 3));
+  return groups.map(g => `${base.join(" ")} (${g.join(" OR ")})`);
 }
 
 async function firecrawlSearch(query: string, limit: number): Promise<RawJob[]> {
@@ -119,8 +121,24 @@ export const searchJobs = createServerFn({ method: "POST" })
       ? profile.cv_raw_text.slice(0, 8000)
       : `Poste cible: ${profile?.target_role ?? data.role}. Compétences: ${(profile?.skills ?? []).join(", ")}.`;
 
-    const query = buildQuery(data);
-    const rawJobs = await firecrawlSearch(query, data.limit);
+    const queries = buildQueries(data);
+    // Limite par requête : on demande un peu plus pour compenser les doublons
+    const perQuery = Math.min(30, Math.ceil(data.limit / Math.max(1, queries.length)) + 5);
+    const results = await Promise.allSettled(queries.map(q => firecrawlSearch(q, perQuery)));
+    const seen = new Set<string>();
+    const rawJobs: RawJob[] = [];
+    for (const r of results) {
+      if (r.status !== "fulfilled") continue;
+      for (const j of r.value) {
+        const key = j.url.split("?")[0].toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        rawJobs.push(j);
+        if (rawJobs.length >= data.limit) break;
+      }
+      if (rawJobs.length >= data.limit) break;
+    }
+    const query = queries.join(" | ");
     if (rawJobs.length === 0) {
       return { query, jobs: [], message: "Aucune offre trouvée. Essayez avec des critères plus larges ou un autre pays." };
     }
