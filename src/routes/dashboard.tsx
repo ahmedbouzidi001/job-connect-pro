@@ -84,7 +84,7 @@ function DashboardPage() {
             <div className="flex-1 min-w-0">
               <div className="text-xs font-bold uppercase tracking-wider text-[color:var(--hyper-cyan)] mb-1">Commence ici</div>
               <h3 className="font-display text-2xl font-bold mb-1">Trouver des offres adaptées à mon profil</h3>
-              <p className="text-sm text-muted-foreground">L'IA cherche en temps réel sur LinkedIn, Indeed et Welcome to the Jungle. Top 10 offres scorées + génération CV+LM en 1 clic.</p>
+              <p className="text-sm text-muted-foreground">L'IA cherche en temps réel sur LinkedIn, Indeed, Welcome to the Jungle + sites locaux. Jusqu'à 50 offres scorées + génération CV+LM en 1 clic.</p>
             </div>
             <ArrowRight className="size-6 text-[color:var(--hyper-cyan)] group-hover:translate-x-1 transition-transform shrink-0 mt-2" />
           </div>

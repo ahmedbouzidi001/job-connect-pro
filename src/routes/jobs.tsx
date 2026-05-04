@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Search, Sparkles, Bookmark, Wand2, ArrowLeft, ArrowRight, Briefcase, MapPin, AlertCircle, Eye, Send, Star } from "lucide-react";
+import { Loader2, Search, Sparkles, Bookmark, Wand2, ArrowLeft, ArrowRight, Briefcase, MapPin, AlertCircle, Eye, Send, Star, Mail, ExternalLink } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { searchJobs, saveJobAsApplication, scrapeJobContent } from "@/server/jobs.functions";
 import { listPublicInternalJobs, applyToJob } from "@/server/recruiter-jobs.functions";
@@ -27,7 +27,7 @@ const COUNTRIES = [
 ];
 
 type ScoredJob = { score: number; title: string; company: string; location: string; summary: string; match_reasons: string[]; keywords: string[]; url: string; source: string; description: string };
-type FullOffer = { title: string; company: string; location: string; contract_type: string; salary: string; missions: string[]; profile: string[]; skills: string[]; benefits: string[]; full_description: string };
+type FullOffer = { title: string; company: string; location: string; contract_type: string; salary: string; missions: string[]; profile: string[]; skills: string[]; benefits: string[]; full_description: string; apply_email?: string; apply_url?: string; recruiter_name?: string };
 type InternalJob = { id: string; title: string; company: string; location: string | null; country_code: string | null; work_type: string | null; employment_type: string | null; description: string | null; required_skills: string[] | null; salary_min: number | null; salary_max: number | null; salary_currency: string | null };
 
 function JobsPage() {
@@ -88,7 +88,7 @@ function JobsPage() {
     if (!role.trim() || !location.trim()) { toast.error("Indique le poste et le lieu"); return; }
     setSearching(true); setJobs([]);
     try {
-      const res = await search({ data: { role: role.trim(), location: location.trim(), countryCode, workType, contract, seniority, salaryMin: null, salaryCurrency: "EUR" as const, language: "fr" as const, keywords: keywords.trim() || null, limit: 10 }}) as { jobs: ScoredJob[]; message: string | null };
+      const res = await search({ data: { role: role.trim(), location: location.trim(), countryCode, workType, contract, seniority, salaryMin: null, salaryCurrency: "EUR" as const, language: "fr" as const, keywords: keywords.trim() || null, limit: 50 }}) as { jobs: ScoredJob[]; message: string | null };
       setJobs(res.jobs); setStep(3);
       if (user) await supabase.from("profiles").update({ preferred_country: countryCode }).eq("user_id", user.id);
       if (res.message) toast.info(res.message); else toast.success(`${res.jobs.length} offres scorées`);
@@ -260,18 +260,44 @@ function JobsPage() {
                   {fullOffer.location && <span className="px-2 py-1 rounded bg-muted">📍 {fullOffer.location}</span>}
                   {fullOffer.contract_type && <span className="px-2 py-1 rounded bg-muted">📋 {fullOffer.contract_type}</span>}
                   {fullOffer.salary && <span className="px-2 py-1 rounded bg-muted">💰 {fullOffer.salary}</span>}
+                  {fullOffer.recruiter_name && <span className="px-2 py-1 rounded bg-muted">👤 {fullOffer.recruiter_name}</span>}
                 </div>
                 {fullOffer.missions?.length > 0 && <div><h4 className="font-bold mb-1">Missions</h4><ul className="list-disc ml-5 space-y-0.5">{fullOffer.missions.map((m,i)=><li key={i}>{m}</li>)}</ul></div>}
                 {fullOffer.profile?.length > 0 && <div><h4 className="font-bold mb-1">Profil recherché</h4><ul className="list-disc ml-5 space-y-0.5">{fullOffer.profile.map((m,i)=><li key={i}>{m}</li>)}</ul></div>}
                 {fullOffer.skills?.length > 0 && <div className="flex flex-wrap gap-1">{fullOffer.skills.map(s=><span key={s} className="text-xs px-2 py-0.5 rounded border">{s}</span>)}</div>}
                 {fullOffer.benefits?.length > 0 && <div><h4 className="font-bold mb-1">Avantages</h4><ul className="list-disc ml-5 space-y-0.5">{fullOffer.benefits.map((m,i)=><li key={i}>{m}</li>)}</ul></div>}
-                <Button onClick={() => { handleGenerate(viewing!, fullOffer); setViewing(null); }} className="w-full rounded-xl font-bold"><Wand2 className="size-4 mr-2" /> Générer CV + LM pour cette offre</Button>
+                <div className="grid sm:grid-cols-2 gap-2 pt-2 border-t border-border/60">
+                  <Button onClick={() => { handleGenerate(viewing!, fullOffer); setViewing(null); }} className="rounded-xl font-bold bg-[color:var(--hyper-cyan)] text-black hover:bg-[color:var(--hyper-cyan)]/90"><Wand2 className="size-4 mr-2" /> Générer CV + LM</Button>
+                  {fullOffer.apply_email ? (
+                    <Button asChild variant="outline" className="rounded-xl font-bold">
+                      <a href={`mailto:${fullOffer.apply_email}?subject=${encodeURIComponent("Candidature : " + (fullOffer.title || ""))}&body=${encodeURIComponent("Bonjour" + (fullOffer.recruiter_name ? " " + fullOffer.recruiter_name : "") + ",\n\nJe vous écris suite à votre annonce pour le poste de " + (fullOffer.title || "") + ".\n\nVous trouverez en pièce jointe mon CV et ma lettre de motivation.\n\nCordialement,")}`}>
+                        <Mail className="size-4 mr-2" /> Postuler par email
+                      </a>
+                    </Button>
+                  ) : fullOffer.apply_url ? (
+                    <Button asChild variant="outline" className="rounded-xl font-bold">
+                      <a href={fullOffer.apply_url} target="_blank" rel="noopener noreferrer"><Send className="size-4 mr-2" /> Postuler en ligne</a>
+                    </Button>
+                  ) : (
+                    <Button asChild variant="outline" className="rounded-xl font-bold">
+                      <a href={viewing!.url} target="_blank" rel="noopener noreferrer"><ExternalLink className="size-4 mr-2" /> Ouvrir l'offre</a>
+                    </Button>
+                  )}
+                </div>
+                <a href={viewing!.url} target="_blank" rel="noopener noreferrer" onClick={() => navigator.clipboard?.writeText(viewing!.url).catch(()=>{})} className="block text-center text-xs text-muted-foreground hover:text-foreground underline">
+                  Ouvrir la source originale ({viewing!.source}) — lien copié
+                </a>
               </div>
             )}
             {!viewLoading && !fullOffer && viewing && (
-              <div className="py-8 text-center text-sm text-muted-foreground">
-                Impossible d'afficher le contenu (site bloqué).
-                <a href={viewing.url} target="_blank" rel="noopener noreferrer" className="block mt-2 text-[color:var(--hyper-cyan)] underline">Ouvrir dans un nouvel onglet</a>
+              <div className="py-8 text-center space-y-3">
+                <p className="text-sm text-muted-foreground">Ce site bloque l'extraction (LinkedIn, certains ATS…).</p>
+                <Button asChild className="rounded-xl font-bold">
+                  <a href={viewing.url} target="_blank" rel="noopener noreferrer" onClick={() => navigator.clipboard?.writeText(viewing.url).catch(()=>{})}>
+                    <ExternalLink className="size-4 mr-2" /> Ouvrir dans un nouvel onglet
+                  </a>
+                </Button>
+                <p className="text-xs text-muted-foreground">Le lien a été copié dans le presse-papier.</p>
               </div>
             )}
           </DialogContent>
