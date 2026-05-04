@@ -27,7 +27,7 @@ const COUNTRIES = [
 ];
 
 type ScoredJob = { score: number; title: string; company: string; location: string; summary: string; match_reasons: string[]; keywords: string[]; url: string; source: string; description: string };
-type FullOffer = { title: string; company: string; location: string; contract_type: string; salary: string; missions: string[]; profile: string[]; skills: string[]; benefits: string[]; full_description: string };
+type FullOffer = { title: string; company: string; location: string; contract_type: string; salary: string; missions: string[]; profile: string[]; skills: string[]; benefits: string[]; full_description: string; apply_email?: string; apply_url?: string; recruiter_name?: string };
 type InternalJob = { id: string; title: string; company: string; location: string | null; country_code: string | null; work_type: string | null; employment_type: string | null; description: string | null; required_skills: string[] | null; salary_min: number | null; salary_max: number | null; salary_currency: string | null };
 
 function JobsPage() {
