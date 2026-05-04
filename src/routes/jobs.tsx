@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Search, Sparkles, Bookmark, Wand2, ArrowLeft, ArrowRight, Briefcase, MapPin, AlertCircle, Eye, Send, Star } from "lucide-react";
+import { Loader2, Search, Sparkles, Bookmark, Wand2, ArrowLeft, ArrowRight, Briefcase, MapPin, AlertCircle, Eye, Send, Star, Mail, ExternalLink } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { searchJobs, saveJobAsApplication, scrapeJobContent } from "@/server/jobs.functions";
 import { listPublicInternalJobs, applyToJob } from "@/server/recruiter-jobs.functions";
