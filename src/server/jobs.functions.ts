@@ -32,20 +32,20 @@ async function aiCall(payload: unknown) {
 
 /* ---------- Sources locales par pays ---------- */
 const COUNTRY_SOURCES: Record<string, string[]> = {
-  TN: ["site:linkedin.com/jobs", "site:tanitjobs.com", "site:keejob.com", "site:emploitunisie.com", "site:bayt.com"],
-  FR: ["site:linkedin.com/jobs", "site:indeed.fr", "site:welcometothejungle.com", "site:apec.fr", "site:hellowork.com", "site:pole-emploi.fr"],
-  MA: ["site:linkedin.com/jobs", "site:rekrute.com", "site:emploi.ma", "site:bayt.com", "site:mjob.ma"],
-  DZ: ["site:linkedin.com/jobs", "site:emploitic.com", "site:emploipartner.com", "site:bayt.com"],
-  CA: ["site:linkedin.com/jobs", "site:indeed.ca", "site:jobboom.com", "site:jobillico.com"],
-  BE: ["site:linkedin.com/jobs", "site:stepstone.be", "site:references.be", "site:vdab.be"],
-  CH: ["site:linkedin.com/jobs", "site:jobup.ch", "site:jobs.ch", "site:indeed.ch"],
-  AE: ["site:linkedin.com/jobs", "site:bayt.com", "site:gulftalent.com", "site:naukrigulf.com"],
-  SA: ["site:linkedin.com/jobs", "site:bayt.com", "site:gulftalent.com"],
-  QA: ["site:linkedin.com/jobs", "site:bayt.com", "site:qatarliving.com"],
-  US: ["site:linkedin.com/jobs", "site:indeed.com", "site:glassdoor.com", "site:dice.com"],
-  UK: ["site:linkedin.com/jobs", "site:indeed.co.uk", "site:reed.co.uk", "site:totaljobs.com"],
-  DE: ["site:linkedin.com/jobs", "site:indeed.de", "site:stepstone.de", "site:xing.com"],
-  ANY: ["site:linkedin.com/jobs", "site:indeed.com", "site:welcometothejungle.com", "site:glassdoor.com"],
+  TN: ["site:linkedin.com/jobs", "site:tn.linkedin.com/jobs", "site:tanitjobs.com", "site:keejob.com", "site:optioncarriere.tn", "site:emploitunisie.com", "site:bayt.com"],
+  FR: ["site:linkedin.com/jobs", "site:indeed.fr", "site:welcometothejungle.com", "site:apec.fr", "site:hellowork.com", "site:fr.indeed.com", "site:pole-emploi.fr", "site:chooseyourboss.com"],
+  MA: ["site:linkedin.com/jobs", "site:rekrute.com", "site:emploi.ma", "site:optioncarriere.ma", "site:bayt.com", "site:mjob.ma"],
+  DZ: ["site:linkedin.com/jobs", "site:emploitic.com", "site:emploipartner.com", "site:optioncarriere.dz", "site:bayt.com"],
+  CA: ["site:linkedin.com/jobs", "site:indeed.ca", "site:jobboom.com", "site:jobillico.com", "site:workopolis.com"],
+  BE: ["site:linkedin.com/jobs", "site:stepstone.be", "site:references.be", "site:vdab.be", "site:leforem.be"],
+  CH: ["site:linkedin.com/jobs", "site:jobup.ch", "site:jobs.ch", "site:indeed.ch", "site:jobscout24.ch"],
+  AE: ["site:linkedin.com/jobs", "site:bayt.com", "site:gulftalent.com", "site:naukrigulf.com", "site:founditgulf.com"],
+  SA: ["site:linkedin.com/jobs", "site:bayt.com", "site:gulftalent.com", "site:founditgulf.com"],
+  QA: ["site:linkedin.com/jobs", "site:bayt.com", "site:qatarliving.com", "site:gulftalent.com"],
+  US: ["site:linkedin.com/jobs", "site:indeed.com", "site:glassdoor.com", "site:dice.com", "site:ziprecruiter.com", "site:builtin.com"],
+  UK: ["site:linkedin.com/jobs", "site:indeed.co.uk", "site:reed.co.uk", "site:totaljobs.com", "site:cwjobs.co.uk"],
+  DE: ["site:linkedin.com/jobs", "site:indeed.de", "site:stepstone.de", "site:xing.com/jobs", "site:stellenanzeigen.de"],
+  ANY: ["site:linkedin.com/jobs", "site:indeed.com", "site:welcometothejungle.com", "site:glassdoor.com", "site:jobs.smartrecruiters.com", "site:boards.greenhouse.io"],
 };
 
 const SearchInput = z.object({
@@ -73,17 +73,61 @@ function buildQueries(p: z.infer<typeof SearchInput>): string[] {
   if (p.seniority !== "any") base.push(p.seniority);
   if (p.keywords) base.push(p.keywords);
   const sources = COUNTRY_SOURCES[p.countryCode] ?? COUNTRY_SOURCES.ANY;
-  // 1 requête par groupe de sources (max 4 sources/requête) pour multiplier la couverture
-  const groups: string[][] = [];
-  for (let i = 0; i < sources.length; i += 3) groups.push(sources.slice(i, i + 3));
-  return groups.map(g => `${base.join(" ")} (${g.join(" OR ")})`);
+  const intent = '(job OR emploi OR hiring OR recrutement)';
+  const baseQuery = `${base.join(" ")} ${intent}`;
+  return [
+    ...sources.map((source) => `${baseQuery} ${source}`),
+    `${baseQuery} (${sources.slice(0, 4).join(" OR ")})`,
+    `${base.join(" ")} ${p.role} ${intent}`,
+  ];
 }
 
-async function firecrawlSearch(query: string, limit: number): Promise<RawJob[]> {
+function normalizeJobUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    parsed.hash = "";
+    ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "trk", "refId"].forEach((key) => parsed.searchParams.delete(key));
+    return parsed.toString().replace(/\/$/, "").toLowerCase();
+  } catch {
+    return url.toLowerCase();
+  }
+}
+
+function diversifyJobs(items: RawJob[], limit: number) {
+  const buckets = new Map<string, RawJob[]>();
+  for (const item of items) {
+    const bucket = buckets.get(item.source) ?? [];
+    bucket.push(item);
+    buckets.set(item.source, bucket);
+  }
+  const orderedSources = [...buckets.entries()].sort((a, b) => b[1].length - a[1].length).map(([source]) => source);
+  const mixed: RawJob[] = [];
+  while (mixed.length < limit) {
+    let added = false;
+    for (const source of orderedSources) {
+      const bucket = buckets.get(source);
+      if (!bucket?.length) continue;
+      mixed.push(bucket.shift()!);
+      added = true;
+      if (mixed.length >= limit) break;
+    }
+    if (!added) break;
+  }
+  return mixed;
+}
+
+async function firecrawlSearch(query: string, limit: number, countryCode: string, language: "fr" | "en" | "ar"): Promise<RawJob[]> {
   const res = await fetch(`${FIRECRAWL_URL}/search`, {
     method: "POST",
     headers: { Authorization: `Bearer ${getFirecrawlKey()}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ query, limit, scrapeOptions: { formats: ["markdown"], onlyMainContent: true } }),
+    body: JSON.stringify({
+      query,
+      limit,
+      country: countryCode === "ANY" ? undefined : countryCode,
+      lang: language,
+      tbs: "qdr:m",
+      scrapeOptions: { formats: ["markdown"], onlyMainContent: true },
+    }),
   });
   if (res.status === 402) throw new Error("Crédits Firecrawl épuisés.");
   if (!res.ok) throw new Error(`Firecrawl ${res.status}: ${(await res.text()).slice(0, 200)}`);
@@ -122,22 +166,20 @@ export const searchJobs = createServerFn({ method: "POST" })
       : `Poste cible: ${profile?.target_role ?? data.role}. Compétences: ${(profile?.skills ?? []).join(", ")}.`;
 
     const queries = buildQueries(data);
-    // Limite par requête : on demande un peu plus pour compenser les doublons
-    const perQuery = Math.min(30, Math.ceil(data.limit / Math.max(1, queries.length)) + 5);
-    const results = await Promise.allSettled(queries.map(q => firecrawlSearch(q, perQuery)));
+    const perQuery = Math.min(20, Math.max(10, Math.ceil(data.limit / 5)));
+    const results = await Promise.allSettled(queries.map(q => firecrawlSearch(q, perQuery, data.countryCode, data.language)));
     const seen = new Set<string>();
-    const rawJobs: RawJob[] = [];
+    const rawJobsPool: RawJob[] = [];
     for (const r of results) {
       if (r.status !== "fulfilled") continue;
       for (const j of r.value) {
-        const key = j.url.split("?")[0].toLowerCase();
+        const key = normalizeJobUrl(j.url);
         if (seen.has(key)) continue;
         seen.add(key);
-        rawJobs.push(j);
-        if (rawJobs.length >= data.limit) break;
+        rawJobsPool.push(j);
       }
-      if (rawJobs.length >= data.limit) break;
     }
+    const rawJobs = diversifyJobs(rawJobsPool, data.limit);
     const query = queries.join(" | ");
     if (rawJobs.length === 0) {
       return { query, jobs: [], message: "Aucune offre trouvée. Essayez avec des critères plus larges ou un autre pays." };
