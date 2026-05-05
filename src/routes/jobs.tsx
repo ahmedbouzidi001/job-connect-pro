@@ -88,7 +88,7 @@ function JobsPage() {
     if (!role.trim() || !location.trim()) { toast.error("Indique le poste et le lieu"); return; }
     setSearching(true); setJobs([]);
     try {
-      const res = await search({ data: { role: role.trim(), location: location.trim(), countryCode, workType, contract, seniority, salaryMin: null, salaryCurrency: "EUR" as const, language: "fr" as const, keywords: keywords.trim() || null, limit: 50 }}) as { jobs: ScoredJob[]; message: string | null };
+      const res = await search({ data: { role: role.trim(), location: location.trim(), countryCode, workType, contract, seniority, salaryMin: null, salaryCurrency: "EUR" as const, language: "fr" as const, keywords: keywords.trim() || null, limit: 100 }}) as { jobs: ScoredJob[]; message: string | null };
       setJobs(res.jobs); setStep(3);
       if (user) await supabase.from("profiles").update({ preferred_country: countryCode }).eq("user_id", user.id);
       if (res.message) toast.info(res.message); else toast.success(`${res.jobs.length} offres scorées`);
@@ -129,7 +129,7 @@ function JobsPage() {
         <header className="mb-8">
           <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[color:var(--hyper-cyan)] mb-3"><Search className="size-3.5" /> Recherche d'emploi multi-pays</div>
           <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tighter mb-2">Trouve les offres adaptées</h1>
-          <p className="text-sm text-muted-foreground">L'IA cherche sur LinkedIn, Indeed, Welcome to the Jungle + sites locaux selon le pays choisi.</p>
+          <p className="text-sm text-muted-foreground">Recherche intensive multi-sources : LinkedIn, Indeed, Welcome to the Jungle, Apec, Hellowork, job boards locaux et ATS publics selon le pays choisi.</p>
         </header>
 
         {hasCv === false && (
@@ -291,13 +291,13 @@ function JobsPage() {
             )}
             {!viewLoading && !fullOffer && viewing && (
               <div className="py-8 text-center space-y-3">
-                <p className="text-sm text-muted-foreground">Ce site bloque l'extraction (LinkedIn, certains ATS…).</p>
+                <p className="text-sm text-muted-foreground">Ce site bloque l'extraction interne directe, surtout sur tn.linkedin.com et certains ATS privés.</p>
                 <Button asChild className="rounded-xl font-bold">
                   <a href={viewing.url} target="_blank" rel="noopener noreferrer" onClick={() => navigator.clipboard?.writeText(viewing.url).catch(()=>{})}>
                     <ExternalLink className="size-4 mr-2" /> Ouvrir dans un nouvel onglet
                   </a>
                 </Button>
-                <p className="text-xs text-muted-foreground">Le lien a été copié dans le presse-papier.</p>
+                <p className="text-xs text-muted-foreground">Le lien a été copié dans le presse-papier pour éviter de perdre la page actuelle.</p>
               </div>
             )}
           </DialogContent>
