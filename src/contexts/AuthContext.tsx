@@ -7,7 +7,7 @@ type AuthCtx = {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null; needsEmailConfirmation: boolean }>;
   signOut: () => Promise<void>;
 };
 
@@ -39,12 +39,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/dashboard`;
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: redirectUrl, data: { full_name: fullName } },
     });
-    return { error: error?.message ?? null };
+    return {
+      error: error?.message ?? null,
+      needsEmailConfirmation: !error && !data.session,
+    };
   };
 
   const signOut = async () => {
