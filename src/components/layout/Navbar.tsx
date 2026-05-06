@@ -57,30 +57,7 @@ export function Navbar() {
   return (
     <nav className="fixed top-0 inset-x-0 z-50 border-b border-border/70 bg-background/80 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-5 min-w-0">
-          <Logo />
-          {user && (
-            <div className="hidden xl:flex items-center gap-1 text-xs font-semibold text-muted-foreground overflow-x-auto min-w-0">
-              {links.map(l => {
-                const Icon = l.icon;
-                return (
-                  <Link key={l.to} to={l.to} className="px-2.5 py-1.5 rounded-full hover:bg-foreground/5 hover:text-foreground transition-colors inline-flex items-center gap-1.5 whitespace-nowrap" activeProps={{ className: "bg-foreground/10 text-foreground" }}>
-                    <Icon className="size-3.5" />{l.label}
-                  </Link>
-                );
-              })}
-              <div className="mx-1 h-4 w-px bg-border/80" />
-              {sharedLinks.map((l) => {
-                const Icon = l.icon;
-                return (
-                  <Link key={l.to} to={l.to} className="px-2.5 py-1.5 rounded-full hover:bg-foreground/5 hover:text-foreground transition-colors inline-flex items-center gap-1.5 whitespace-nowrap" activeProps={{ className: "bg-foreground/10 text-foreground" }}>
-                    <Icon className="size-3.5" />{l.label}
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <Logo />
         <div className="flex items-center gap-2">
           <LangToggle />
           <ThemeToggle />
@@ -106,21 +83,32 @@ export function Navbar() {
         </div>
       </div>
       {user && (
-        <div className="lg:hidden border-t border-border/60 bg-background/80 overflow-x-auto">
-          <div className="max-w-7xl mx-auto px-4 py-1.5 flex items-center gap-1 text-[11px] font-semibold text-muted-foreground whitespace-nowrap">
-            {links.map(l => {
+        <div className="border-t border-border/60 bg-gradient-to-r from-background/95 via-background/80 to-background/95 backdrop-blur-xl">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+            {links.map((l) => {
               const Icon = l.icon;
               return (
-                <Link key={l.to} to={l.to} className="px-2 py-1 rounded-full inline-flex items-center gap-1" activeProps={{ className: "bg-foreground/10 text-foreground" }}>
-                  <Icon className="size-3" />{l.label}
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  className="group relative shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-muted-foreground border border-transparent hover:text-foreground hover:bg-foreground/5 hover:border-border/60 transition-all whitespace-nowrap"
+                  activeProps={{ className: "text-black bg-[color:var(--hyper-cyan)] border-[color:var(--hyper-cyan)] shadow-[0_4px_18px_-6px_color-mix(in_oklab,var(--hyper-cyan)_70%,transparent)]" }}
+                >
+                  <Icon className="size-3.5" />{l.label}
                 </Link>
               );
             })}
+            <div className="mx-1.5 h-5 w-px bg-border/70 shrink-0" />
             {sharedLinks.map((l) => {
               const Icon = l.icon;
               return (
-                <Link key={l.to} to={l.to} className="px-2 py-1 rounded-full inline-flex items-center gap-1" activeProps={{ className: "bg-foreground/10 text-foreground" }}>
-                  <Icon className="size-3" />{l.label}
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-muted-foreground border border-transparent hover:text-foreground hover:bg-foreground/5 hover:border-border/60 transition-all whitespace-nowrap"
+                  activeProps={{ className: "text-black bg-[color:var(--hyper-lime)] border-[color:var(--hyper-lime)] shadow-[0_4px_18px_-6px_color-mix(in_oklab,var(--hyper-lime)_70%,transparent)]" }}
+                >
+                  <Icon className="size-3.5" />{l.label}
                 </Link>
               );
             })}
