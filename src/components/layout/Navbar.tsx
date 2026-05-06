@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
@@ -13,7 +13,6 @@ export function Navbar() {
   const { user, signOut } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
-  const location = useLocation();
   const [detectedView, setDetectedView] = useState<"candidate" | "recruiter">("candidate");
 
   useEffect(() => {
@@ -26,7 +25,6 @@ export function Navbar() {
   }, [user]);
 
   const view = detectedView;
-  void location;
 
   const handleSignOut = async () => {
     await signOut();
