@@ -19,22 +19,14 @@ export function Navbar() {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const [roles, jobs] = await Promise.all([
-        supabase.from("user_roles").select("role").eq("user_id", user.id),
-        supabase.from("jobs").select("id", { count: "exact", head: true }).eq("posted_by", user.id),
-      ]);
-      const isRecruiter = (roles.data ?? []).some(r => r.role === "recruiter") || (jobs.count ?? 0) > 0;
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+      const isRecruiter = (data ?? []).some(r => r.role === "recruiter");
       setDetectedView(isRecruiter ? "recruiter" : "candidate");
     })();
   }, [user]);
 
-  const recruiterPaths = ["/recruiter", "/recruiter-jobs"];
-  const candidatePaths = ["/cv", "/generator", "/skills", "/linkedin", "/applications"];
-  const view = recruiterPaths.some((path) => location.pathname.startsWith(path))
-    ? "recruiter"
-    : candidatePaths.some((path) => location.pathname.startsWith(path))
-      ? "candidate"
-      : detectedView;
+  const view = detectedView;
+  void location;
 
   const handleSignOut = async () => {
     await signOut();
@@ -71,10 +63,6 @@ export function Navbar() {
           <Logo />
           {user && (
             <div className="hidden xl:flex items-center gap-1 text-xs font-semibold text-muted-foreground overflow-x-auto min-w-0">
-              <div className="me-2 inline-flex items-center gap-2 rounded-full border border-border/80 bg-background/70 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                <Sparkles className="size-3.5 text-hyper-cyan" />
-                {view === "recruiter" ? "Espace recruteur" : "Espace candidat"}
-              </div>
               {links.map(l => {
                 const Icon = l.icon;
                 return (
@@ -122,9 +110,6 @@ export function Navbar() {
       {user && (
         <div className="lg:hidden border-t border-border/60 bg-background/80 overflow-x-auto">
           <div className="max-w-7xl mx-auto px-4 py-1.5 flex items-center gap-1 text-[11px] font-semibold text-muted-foreground whitespace-nowrap">
-            <span className="me-1 rounded-full border border-border/70 bg-background/80 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-              {view === "recruiter" ? "Recruteur" : "Candidat"}
-            </span>
             {links.map(l => {
               const Icon = l.icon;
               return (
