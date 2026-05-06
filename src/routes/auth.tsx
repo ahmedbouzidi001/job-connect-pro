@@ -22,6 +22,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [role, setRole] = useState<"candidate" | "recruiter">("candidate");
   const [submitting, setSubmitting] = useState(false);
   const passwordChecks = [
     { label: "6+ caractères", valid: password.length >= 6 },
@@ -45,7 +46,7 @@ function AuthPage() {
           navigate({ to: "/dashboard" });
         }
       } else {
-        const { error, needsEmailConfirmation } = await signUp(email, password, fullName);
+        const { error, needsEmailConfirmation } = await signUp(email, password, fullName, role);
         if (error) {
           toast.error(error);
         } else {
