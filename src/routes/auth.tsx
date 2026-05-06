@@ -133,6 +133,21 @@ function AuthPage() {
                     <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required autoComplete="name" placeholder="Votre nom complet" />
                   </div>
                 )}
+                {mode === "signup" && (
+                  <div className="space-y-1.5">
+                    <Label>Je suis</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button type="button" onClick={() => setRole("candidate")} className={`rounded-xl border px-4 py-3 text-sm font-bold transition-colors ${role === "candidate" ? "border-[color:var(--hyper-cyan)] bg-[color:var(--hyper-cyan)]/10 text-foreground" : "border-border/70 text-muted-foreground hover:text-foreground"}`}>
+                        🎯 Candidat
+                        <p className="text-[10px] font-normal text-muted-foreground mt-0.5">Recherche d'emploi</p>
+                      </button>
+                      <button type="button" onClick={() => setRole("recruiter")} className={`rounded-xl border px-4 py-3 text-sm font-bold transition-colors ${role === "recruiter" ? "border-[color:var(--hyper-lime)] bg-[color:var(--hyper-lime)]/10 text-foreground" : "border-border/70 text-muted-foreground hover:text-foreground"}`}>
+                        💼 Recruteur
+                        <p className="text-[10px] font-normal text-muted-foreground mt-0.5">Publier des offres</p>
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-1.5">
                   <Label htmlFor="email">{t("auth.email")}</Label>
                   <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" placeholder="nom@entreprise.com" />
