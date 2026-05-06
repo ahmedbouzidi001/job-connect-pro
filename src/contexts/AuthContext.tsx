@@ -7,7 +7,7 @@ type AuthCtx = {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null; needsEmailConfirmation: boolean }>;
+  signUp: (email: string, password: string, fullName: string, role?: "candidate" | "recruiter") => Promise<{ error: string | null; needsEmailConfirmation: boolean }>;
   signOut: () => Promise<void>;
 };
 
@@ -37,13 +37,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null };
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, role: "candidate" | "recruiter" = "candidate") => {
     const redirectUrl = `${window.location.origin}/dashboard`;
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: redirectUrl, data: { full_name: fullName } },
+      options: { emailRedirectTo: redirectUrl, data: { full_name: fullName, intended_role: role } },
     });
+    if (!error && data.user) {
+      try {
+        await supabase.from("user_roles").insert({ user_id: data.user.id, role }).then(() => {});
+      } catch { /* trigger already inserted candidate; ignore conflicts */ }
+    }
     return {
       error: error?.message ?? null,
       needsEmailConfirmation: !error && !data.session,
