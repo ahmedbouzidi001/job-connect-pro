@@ -6,7 +6,7 @@ import { LangToggle } from "./LangToggle";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/contexts/I18nContext";
-import { LogOut, LayoutDashboard, Crown, Search, FileText, Wand2, GraduationCap, Linkedin, Briefcase, MessageSquare, User as UserIcon, Users, Sparkles } from "lucide-react";
+import { LogOut, LayoutDashboard, Crown, Search, FileText, Wand2, GraduationCap, Linkedin, Briefcase, MessageSquare, User as UserIcon, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export function Navbar() {
