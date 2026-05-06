@@ -113,7 +113,18 @@ function JobsPage() {
     navigate({ to: "/generator" });
   };
 
+  const BLOCKED_DOMAINS = ["linkedin.com", "indeed.com", "indeed.fr", "indeed.co.uk", "indeed.de", "glassdoor.com", "ziprecruiter.com"];
+  const isBlockedDomain = (url: string) => {
+    try { const h = new URL(url).hostname.replace(/^www\./, ""); return BLOCKED_DOMAINS.some(d => h.includes(d)); } catch { return false; }
+  };
   const handleView = async (job: ScoredJob) => {
+    // Sites known to block scraping → open directly to avoid wasted time.
+    if (isBlockedDomain(job.url)) {
+      navigator.clipboard?.writeText(job.url).catch(() => {});
+      window.open(job.url, "_blank", "noopener,noreferrer");
+      toast.info("Lien copié — ouverture sur le site source");
+      return;
+    }
     setViewing(job); setFullOffer(null); setViewLoading(true);
     try { setFullOffer(await scrape({ data: { url: job.url }}) as FullOffer); }
     catch (e) { toast.error((e as Error).message); setFullOffer(null); }

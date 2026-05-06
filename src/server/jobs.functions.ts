@@ -32,20 +32,20 @@ async function aiCall(payload: unknown) {
 
 /* ---------- Sources locales par pays ---------- */
 const COUNTRY_SOURCES: Record<string, string[]> = {
-  TN: ["site:linkedin.com/jobs", "site:tn.linkedin.com/jobs", "site:tanitjobs.com", "site:keejob.com", "site:optioncarriere.tn", "site:emploitunisie.com", "site:bayt.com"],
-  FR: ["site:linkedin.com/jobs", "site:indeed.fr", "site:welcometothejungle.com", "site:apec.fr", "site:hellowork.com", "site:fr.indeed.com", "site:pole-emploi.fr", "site:chooseyourboss.com"],
-  MA: ["site:linkedin.com/jobs", "site:rekrute.com", "site:emploi.ma", "site:optioncarriere.ma", "site:bayt.com", "site:mjob.ma"],
-  DZ: ["site:linkedin.com/jobs", "site:emploitic.com", "site:emploipartner.com", "site:optioncarriere.dz", "site:bayt.com"],
-  CA: ["site:linkedin.com/jobs", "site:indeed.ca", "site:jobboom.com", "site:jobillico.com", "site:workopolis.com"],
-  BE: ["site:linkedin.com/jobs", "site:stepstone.be", "site:references.be", "site:vdab.be", "site:leforem.be"],
-  CH: ["site:linkedin.com/jobs", "site:jobup.ch", "site:jobs.ch", "site:indeed.ch", "site:jobscout24.ch"],
-  AE: ["site:linkedin.com/jobs", "site:bayt.com", "site:gulftalent.com", "site:naukrigulf.com", "site:founditgulf.com"],
-  SA: ["site:linkedin.com/jobs", "site:bayt.com", "site:gulftalent.com", "site:founditgulf.com"],
-  QA: ["site:linkedin.com/jobs", "site:bayt.com", "site:qatarliving.com", "site:gulftalent.com"],
-  US: ["site:linkedin.com/jobs", "site:indeed.com", "site:glassdoor.com", "site:dice.com", "site:ziprecruiter.com", "site:builtin.com"],
-  UK: ["site:linkedin.com/jobs", "site:indeed.co.uk", "site:reed.co.uk", "site:totaljobs.com", "site:cwjobs.co.uk"],
-  DE: ["site:linkedin.com/jobs", "site:indeed.de", "site:stepstone.de", "site:xing.com/jobs", "site:stellenanzeigen.de"],
-  ANY: ["site:linkedin.com/jobs", "site:indeed.com", "site:welcometothejungle.com", "site:glassdoor.com", "site:jobs.smartrecruiters.com", "site:boards.greenhouse.io"],
+  TN: ["site:tanitjobs.com", "site:keejob.com", "site:optioncarriere.tn", "site:emploitunisie.com", "site:bayt.com", "site:tn.indeed.com", "site:linkedin.com/jobs"],
+  FR: ["site:indeed.fr", "site:welcometothejungle.com", "site:apec.fr", "site:hellowork.com", "site:pole-emploi.fr", "site:chooseyourboss.com", "site:jobteaser.com", "site:linkedin.com/jobs"],
+  MA: ["site:rekrute.com", "site:emploi.ma", "site:optioncarriere.ma", "site:bayt.com", "site:mjob.ma", "site:marocannonces.com", "site:linkedin.com/jobs"],
+  DZ: ["site:emploitic.com", "site:emploipartner.com", "site:optioncarriere.dz", "site:bayt.com", "site:ouedkniss.com", "site:linkedin.com/jobs"],
+  CA: ["site:indeed.ca", "site:jobboom.com", "site:jobillico.com", "site:workopolis.com", "site:monster.ca", "site:linkedin.com/jobs"],
+  BE: ["site:stepstone.be", "site:references.be", "site:vdab.be", "site:leforem.be", "site:jobat.be", "site:linkedin.com/jobs"],
+  CH: ["site:jobup.ch", "site:jobs.ch", "site:indeed.ch", "site:jobscout24.ch", "site:linkedin.com/jobs"],
+  AE: ["site:bayt.com", "site:gulftalent.com", "site:naukrigulf.com", "site:founditgulf.com", "site:dubizzle.com", "site:linkedin.com/jobs"],
+  SA: ["site:bayt.com", "site:gulftalent.com", "site:founditgulf.com", "site:naukrigulf.com", "site:linkedin.com/jobs"],
+  QA: ["site:bayt.com", "site:qatarliving.com", "site:gulftalent.com", "site:naukrigulf.com", "site:linkedin.com/jobs"],
+  US: ["site:indeed.com", "site:glassdoor.com", "site:dice.com", "site:ziprecruiter.com", "site:builtin.com", "site:wellfound.com", "site:lever.co", "site:boards.greenhouse.io", "site:linkedin.com/jobs"],
+  UK: ["site:indeed.co.uk", "site:reed.co.uk", "site:totaljobs.com", "site:cwjobs.co.uk", "site:cv-library.co.uk", "site:linkedin.com/jobs"],
+  DE: ["site:indeed.de", "site:stepstone.de", "site:xing.com/jobs", "site:stellenanzeigen.de", "site:meinestadt.de", "site:linkedin.com/jobs"],
+  ANY: ["site:indeed.com", "site:welcometothejungle.com", "site:glassdoor.com", "site:jobs.smartrecruiters.com", "site:boards.greenhouse.io", "site:lever.co", "site:wellfound.com", "site:linkedin.com/jobs"],
 };
 
 const SearchInput = z.object({
@@ -77,7 +77,6 @@ function buildQueries(p: z.infer<typeof SearchInput>): string[] {
   const baseQuery = `${base.join(" ")} ${intent}`;
   return [
     ...sources.map((source) => `${baseQuery} ${source}`),
-    `${baseQuery} (${sources.slice(0, 4).join(" OR ")})`,
     `${base.join(" ")} ${p.role} ${intent}`,
   ];
 }
@@ -96,23 +95,36 @@ function normalizeJobUrl(url: string) {
 function diversifyJobs(items: RawJob[], limit: number) {
   const buckets = new Map<string, RawJob[]>();
   for (const item of items) {
-    const bucket = buckets.get(item.source) ?? [];
+    const key = item.source.includes("linkedin") ? "linkedin" : item.source;
+    const bucket = buckets.get(key) ?? [];
     bucket.push(item);
-    buckets.set(item.source, bucket);
+    buckets.set(key, bucket);
   }
-  const orderedSources = [...buckets.entries()].sort((a, b) => b[1].length - a[1].length).map(([source]) => source);
+  const sourceCount = buckets.size;
+  // Cap LinkedIn at 25% so other sources are well-represented.
+  const linkedinCap = Math.max(5, Math.floor(limit * 0.25));
+  const otherSources = [...buckets.keys()].filter(k => k !== "linkedin");
+  // Round-robin across non-linkedin first, then add linkedin up to cap.
   const mixed: RawJob[] = [];
-  while (mixed.length < limit) {
-    let added = false;
-    for (const source of orderedSources) {
-      const bucket = buckets.get(source);
-      if (!bucket?.length) continue;
-      mixed.push(bucket.shift()!);
-      added = true;
-      if (mixed.length >= limit) break;
+  let linkedinAdded = 0;
+  let progress = true;
+  while (mixed.length < limit && progress) {
+    progress = false;
+    for (const src of otherSources) {
+      const b = buckets.get(src);
+      if (b?.length) { mixed.push(b.shift()!); progress = true; if (mixed.length >= limit) break; }
     }
-    if (!added) break;
+    const lb = buckets.get("linkedin");
+    if (lb?.length && linkedinAdded < linkedinCap && mixed.length < limit) {
+      mixed.push(lb.shift()!); linkedinAdded++; progress = true;
+    }
   }
+  // Fill remaining with whatever is left (linkedin overflow)
+  if (mixed.length < limit) {
+    const lb = buckets.get("linkedin") ?? [];
+    while (lb.length && mixed.length < limit) mixed.push(lb.shift()!);
+  }
+  void sourceCount;
   return mixed;
 }
 
