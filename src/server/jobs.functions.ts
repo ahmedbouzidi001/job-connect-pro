@@ -220,11 +220,11 @@ export const searchJobs = createServerFn({ method: "POST" })
       rawJobs = diversifyJobs(rawJobsPool, data.limit);
       // Store in cache (fire and forget)
       if (rawJobs.length > 0) {
-        supabaseAdmin.from("job_search_cache").upsert({
+        supabaseAdmin.from("job_search_cache").upsert([{
           cache_key: cacheKey,
-          raw_jobs: rawJobs as unknown as object,
+          raw_jobs: rawJobs as never,
           expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        }, { onConflict: "cache_key" }).then(() => {});
+        }], { onConflict: "cache_key" }).then(() => {});
       }
     }
 
