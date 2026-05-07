@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Search, Sparkles, Bookmark, Wand2, ArrowLeft, ArrowRight, Briefcase, MapPin, AlertCircle, Eye, Send, Star, Mail, ExternalLink } from "lucide-react";
+import { Loader2, Search, Sparkles, Bookmark, Wand2, ArrowLeft, ArrowRight, Briefcase, MapPin, AlertCircle, Eye, Send, Star, Mail, ExternalLink, Bell, Zap } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { searchJobs, saveJobAsApplication, scrapeJobContent } from "@/server/jobs.functions";
 import { listPublicInternalJobs, applyToJob } from "@/server/recruiter-jobs.functions";
+import { createAlert } from "@/server/alerts.functions";
+import { generateApplicationDraft } from "@/server/drafts.functions";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -38,6 +40,8 @@ function JobsPage() {
   const scrape = useServerFn(scrapeJobContent);
   const listInternal = useServerFn(listPublicInternalJobs);
   const apply = useServerFn(applyToJob);
+  const createAlertFn = useServerFn(createAlert);
+  const generateDraft = useServerFn(generateApplicationDraft);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [hasCv, setHasCv] = useState<boolean | null>(null);
@@ -58,6 +62,9 @@ function JobsPage() {
   const [applyTo, setApplyTo] = useState<InternalJob | null>(null);
   const [coverMsg, setCoverMsg] = useState("");
   const [applying, setApplying] = useState(false);
+  const [draftingId, setDraftingId] = useState<string | null>(null);
+  const [creatingAlert, setCreatingAlert] = useState(false);
+  const [draftPreview, setDraftPreview] = useState<{ cv: string; letter: string; title: string } | null>(null);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/auth" }); }, [user, loading, navigate]);
   useEffect(() => {
@@ -111,6 +118,31 @@ function JobsPage() {
       jobDescription: full?.full_description || job.description?.slice(0, 8000) || job.summary,
     }));
     navigate({ to: "/generator" });
+  };
+
+  const handleCreateAlert = async () => {
+    if (!role.trim() || !location.trim()) { toast.error("Définis d'abord poste et lieu"); return; }
+    setCreatingAlert(true);
+    try {
+      await createAlertFn({ data: { role: role.trim(), location: location.trim(), countryCode, keywords: keywords.trim() || null, workType, contract, seniority, minScore: 70 }});
+      toast.success("Alerte créée — tu seras notifié des nouvelles offres");
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setCreatingAlert(false); }
+  };
+
+  const handleAutoDraft = async (job: ScoredJob) => {
+    if (!hasCv) { toast.error("Analyse d'abord ton CV"); return; }
+    setDraftingId(job.url);
+    try {
+      const r = await generateDraft({ data: {
+        jobTitle: job.title, company: job.company, jobUrl: job.url,
+        jobDescription: job.description?.slice(0, 8000) || job.summary,
+        matchScore: job.score, language: "fr" as const,
+      }}) as { tailored_cv: string; cover_letter: string };
+      setDraftPreview({ cv: r.tailored_cv, letter: r.cover_letter, title: job.title });
+      toast.success("Brouillon CV + lettre prêt");
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setDraftingId(null); }
   };
 
   const BLOCKED_DOMAINS = ["linkedin.com", "indeed.com", "indeed.fr", "indeed.co.uk", "indeed.de", "glassdoor.com", "ziprecruiter.com"];
@@ -223,7 +255,13 @@ function JobsPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-xl font-bold">{jobs.length} offres scorées</h2>
-              <Button onClick={() => setStep(1)} variant="outline" size="sm" className="rounded-full"><Search className="size-3.5 mr-1.5" /> Nouvelle recherche</Button>
+              <div className="flex gap-2">
+                <Button onClick={handleCreateAlert} disabled={creatingAlert} variant="outline" size="sm" className="rounded-full">
+                  {creatingAlert ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Bell className="size-3.5 mr-1.5" />}
+                  Créer une alerte
+                </Button>
+                <Button onClick={() => setStep(1)} variant="outline" size="sm" className="rounded-full"><Search className="size-3.5 mr-1.5" /> Nouvelle recherche</Button>
+              </div>
             </div>
             {jobs.length === 0 && !searching && (
               <div className="glass-panel rounded-2xl p-12 text-center"><Briefcase className="size-10 text-muted-foreground mx-auto mb-3" /><p className="text-sm text-muted-foreground mb-4">Aucune offre. Élargis tes critères.</p><Button onClick={() => setStep(1)} variant="outline" size="sm">Modifier</Button></div>
@@ -249,6 +287,12 @@ function JobsPage() {
                 {job.keywords.length > 0 && <div className="flex flex-wrap gap-1.5 mb-4">{job.keywords.map(k => <span key={k} className="text-xs px-2 py-0.5 rounded-full bg-foreground/5 border border-foreground/10">{k}</span>)}</div>}
                 <div className="flex flex-wrap gap-2 pt-3 border-t border-border/60">
                   <Button onClick={() => handleGenerate(job)} size="sm" className="rounded-full font-bold bg-[color:var(--hyper-cyan)] text-black hover:bg-[color:var(--hyper-cyan)]/90"><Wand2 className="size-3.5 mr-1.5" /> Générer CV + LM</Button>
+                  {job.score >= 75 && (
+                    <Button onClick={() => handleAutoDraft(job)} disabled={draftingId === job.url} size="sm" className="rounded-full font-bold bg-[color:var(--hyper-lime)] text-black hover:bg-[color:var(--hyper-lime)]/90">
+                      {draftingId === job.url ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Zap className="size-3.5 mr-1.5" />}
+                      Auto-brouillon
+                    </Button>
+                  )}
                   <Button onClick={() => handleView(job)} variant="outline" size="sm" className="rounded-full"><Eye className="size-3.5 mr-1.5" /> Voir l'offre</Button>
                   <Button onClick={() => handleSave(job)} disabled={savingId === job.url} variant="ghost" size="sm" className="rounded-full">
                     {savingId === job.url ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Bookmark className="size-3.5 mr-1.5" />}
@@ -259,6 +303,25 @@ function JobsPage() {
             ))}
           </div>
         )}
+
+        <Dialog open={!!draftPreview} onOpenChange={(o) => !o && setDraftPreview(null)}>
+          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader><DialogTitle>Brouillon généré : {draftPreview?.title}</DialogTitle></DialogHeader>
+            {draftPreview && (
+              <div className="space-y-4 text-sm">
+                <div>
+                  <h4 className="font-bold mb-2 text-[color:var(--hyper-cyan)]">CV adapté</h4>
+                  <pre className="whitespace-pre-wrap font-sans rounded-xl border border-border bg-muted/30 p-4 text-xs leading-relaxed max-h-[40vh] overflow-y-auto">{draftPreview.cv}</pre>
+                </div>
+                <div>
+                  <h4 className="font-bold mb-2 text-[color:var(--hyper-lime)]">Lettre de motivation</h4>
+                  <pre className="whitespace-pre-wrap font-sans rounded-xl border border-border bg-muted/30 p-4 text-xs leading-relaxed max-h-[40vh] overflow-y-auto">{draftPreview.letter}</pre>
+                </div>
+                <p className="text-xs text-muted-foreground">Brouillon sauvegardé. Retrouve-le dans tes candidatures.</p>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
           <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
