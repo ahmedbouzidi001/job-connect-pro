@@ -1,10 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-client-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { z } from "zod";
 
 const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-2.5-flash";
+const FAST_MODEL = "google/gemini-2.5-flash-lite";
 const FIRECRAWL_URL = "https://api.firecrawl.dev/v2";
 
 function getAIKey() {
@@ -177,22 +179,55 @@ export const searchJobs = createServerFn({ method: "POST" })
       ? profile.cv_raw_text.slice(0, 8000)
       : `Poste cible: ${profile?.target_role ?? data.role}. Compétences: ${(profile?.skills ?? []).join(", ")}.`;
 
+    // Cache key: search criteria only (not user-specific)
+    const cacheKey = JSON.stringify({
+      r: data.role.toLowerCase().trim(), l: data.location.toLowerCase().trim(),
+      c: data.countryCode, w: data.workType, ct: data.contract, s: data.seniority,
+      k: (data.keywords ?? "").toLowerCase().trim(), lim: data.limit,
+    });
+
+    let rawJobs: RawJob[] = [];
+    let fromCache = false;
+    const { data: cached } = await supabaseAdmin
+      .from("job_search_cache")
+      .select("raw_jobs, expires_at")
+      .eq("cache_key", cacheKey)
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+
+    if (cached?.raw_jobs && Array.isArray(cached.raw_jobs) && (cached.raw_jobs as unknown[]).length > 0) {
+      rawJobs = cached.raw_jobs as unknown as RawJob[];
+      fromCache = true;
+    }
+
     const queries = buildQueries(data);
-    const perQuery = Math.min(20, Math.max(10, Math.ceil(data.limit / 5)));
-    const results = await Promise.allSettled(queries.map(q => firecrawlSearch(q, perQuery, data.countryCode, data.language)));
-    const seen = new Set<string>();
-    const rawJobsPool: RawJob[] = [];
-    for (const r of results) {
-      if (r.status !== "fulfilled") continue;
-      for (const j of r.value) {
-        const key = normalizeJobUrl(j.url);
-        if (seen.has(key)) continue;
-        seen.add(key);
-        rawJobsPool.push(j);
+    const query = queries.join(" | ");
+
+    if (!fromCache) {
+      const perQuery = Math.min(20, Math.max(10, Math.ceil(data.limit / 5)));
+      const results = await Promise.allSettled(queries.map(q => firecrawlSearch(q, perQuery, data.countryCode, data.language)));
+      const seen = new Set<string>();
+      const rawJobsPool: RawJob[] = [];
+      for (const r of results) {
+        if (r.status !== "fulfilled") continue;
+        for (const j of r.value) {
+          const key = normalizeJobUrl(j.url);
+          if (seen.has(key)) continue;
+          seen.add(key);
+          rawJobsPool.push(j);
+        }
+      }
+      rawJobs = diversifyJobs(rawJobsPool, data.limit);
+      // Store in cache (fire and forget)
+      if (rawJobs.length > 0) {
+        supabaseAdmin.from("job_search_cache").upsert({
+          cache_key: cacheKey,
+          raw_jobs: rawJobs as unknown as object,
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        }, { onConflict: "cache_key" }).then(() => {});
       }
     }
-    const rawJobs = diversifyJobs(rawJobsPool, data.limit);
-    const query = queries.join(" | ");
+
     if (rawJobs.length === 0) {
       return { query, jobs: [], message: "Aucune offre trouvée. Essayez avec des critères plus larges ou un autre pays." };
     }
@@ -200,11 +235,12 @@ export const searchJobs = createServerFn({ method: "POST" })
     const langName = data.language === "ar" ? "arabe" : data.language === "en" ? "anglais" : "français";
     const jobsForScoring = rawJobs.map((j, i) => ({ idx: i, title: j.title, company: j.company, source: j.source, excerpt: j.snippet.slice(0, 1500) }));
 
+    // Fast model for batch scoring (much faster, cheaper). Falls back to MODEL if fails.
     const ai = await aiCall({
-      model: MODEL,
+      model: FAST_MODEL,
       messages: [
-        { role: "system", content: `Expert recrutement. Réponds en ${langName}. Sois honnête : score < 50 si l'offre ne matche pas vraiment.` },
-        { role: "user", content: `PROFIL:\n"""\n${candidateContext}\n"""\n\nOFFRES (${jobsForScoring.length}):\n${jobsForScoring.map((j) => `[${j.idx}] ${j.title} @ ${j.company} (${j.source})\n${j.excerpt}\n---`).join("\n")}\n\nScore chaque offre 0-100, titre nettoyé, entreprise, localisation, résumé, raisons de match, mots-clés.` },
+        { role: "system", content: `Expert recrutement. Réponds en ${langName}. Score multi-critères (skills, séniorité, localisation, secteur). Sois strict : score <50 si pas de vrai match.` },
+        { role: "user", content: `PROFIL:\n"""\n${candidateContext}\n"""\n\nOFFRES (${jobsForScoring.length}):\n${jobsForScoring.map((j) => `[${j.idx}] ${j.title} @ ${j.company} (${j.source})\n${j.excerpt}\n---`).join("\n")}\n\nPour chaque offre: score 0-100, titre nettoyé, entreprise, localisation, résumé court, 2-4 raisons précises (skills/séniorité/contexte), mots-clés.` },
       ],
       tools: [{
         type: "function",
@@ -250,7 +286,7 @@ export const searchJobs = createServerFn({ method: "POST" })
       return { ...s, url: raw.url, source: raw.source, description: raw.snippet };
     }).filter(Boolean).sort((a: any, b: any) => b.score - a.score);
 
-    return { query, jobs: enriched, message: null };
+    return { query, jobs: enriched, message: fromCache ? "Résultats instantanés (cache 24h)" : null, cached: fromCache };
   });
 
 /* ---------- Sauvegarder offre ---------- */
