@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/contexts/I18nContext";
 import { toast } from "sonner";
-import { CheckCircle2, Loader2, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import { CheckCircle2, Loader2, ShieldCheck, Sparkles, Zap, KeyRound } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -24,6 +25,9 @@ function AuthPage() {
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<"candidate" | "recruiter">("candidate");
   const [submitting, setSubmitting] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSending, setForgotSending] = useState(false);
   const passwordChecks = [
     { label: "6+ caractères", valid: password.length >= 6 },
     { label: "1 chiffre", valid: /\d/.test(password) },
@@ -33,6 +37,16 @@ function AuthPage() {
     if (!authLoading && user) navigate({ to: "/dashboard" });
   }, [user, authLoading, navigate]);
 
+  const mapError = (msg: string): string => {
+    const m = msg.toLowerCase();
+    if (m.includes("invalid login")) return "Email ou mot de passe incorrect. Vérifiez vos identifiants ou réinitialisez votre mot de passe.";
+    if (m.includes("already registered") || m.includes("user_already_exists")) return "Un compte existe déjà avec cet email — utilisez « Connexion » à la place.";
+    if (m.includes("email not confirmed")) return "Email non confirmé. Cliquez sur « Mot de passe oublié » pour recevoir un nouveau lien.";
+    if (m.includes("password") && m.includes("6")) return "Mot de passe trop court (minimum 6 caractères).";
+    if (m.includes("rate limit")) return "Trop de tentatives. Patientez quelques secondes avant de réessayer.";
+    return msg;
+  };
+
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -40,7 +54,7 @@ function AuthPage() {
       if (mode === "signin") {
         const { error } = await signIn(email, password);
         if (error) {
-          toast.error(error);
+          toast.error(mapError(error));
         } else {
           toast.success("Welcome back");
           navigate({ to: "/dashboard" });
@@ -48,7 +62,11 @@ function AuthPage() {
       } else {
         const { error, needsEmailConfirmation } = await signUp(email, password, fullName, role);
         if (error) {
-          toast.error(error);
+          const mapped = mapError(error);
+          toast.error(mapped);
+          if (error.toLowerCase().includes("already")) {
+            setMode("signin");
+          }
         } else {
           toast.success(needsEmailConfirmation ? "Compte créé — vérifiez votre email pour continuer" : "Compte créé — bienvenue !");
           if (!needsEmailConfirmation) navigate({ to: "/dashboard" });
@@ -56,6 +74,26 @@ function AuthPage() {
       }
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const onForgotPassword = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail) return;
+    setForgotSending(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) {
+        toast.error(mapError(error.message));
+      } else {
+        toast.success("Email de réinitialisation envoyé. Vérifiez votre boîte de réception.");
+        setForgotOpen(false);
+        setForgotEmail("");
+      }
+    } finally {
+      setForgotSending(false);
     }
   };
 
@@ -155,7 +193,11 @@ function AuthPage() {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between gap-3">
                     <Label htmlFor="password">{t("auth.password")}</Label>
-                    {mode === "signin" && <span className="text-[11px] text-muted-foreground">Minimum 6 caractères</span>}
+                    {mode === "signin" && (
+                      <button type="button" onClick={() => { setForgotOpen(true); setForgotEmail(email); }} className="text-[11px] text-hyper-cyan hover:underline font-bold">
+                        Mot de passe oublié ?
+                      </button>
+                    )}
                   </div>
                   <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}
                     autoComplete={mode === "signin" ? "current-password" : "new-password"} placeholder="••••••••" />
@@ -195,6 +237,34 @@ function AuthPage() {
               <div className="mt-6 text-center">
                 <Link to="/" className="text-xs text-muted-foreground hover:text-foreground">← Home</Link>
               </div>
+
+              {forgotOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setForgotOpen(false)}>
+                  <div className="glass-panel rounded-3xl p-6 sm:p-8 max-w-md w-full relative" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="rounded-xl border border-border/80 bg-background/70 p-2">
+                        <KeyRound className="size-5 text-hyper-cyan" />
+                      </div>
+                      <div>
+                        <h3 className="font-display text-xl font-bold tracking-tight">Réinitialiser le mot de passe</h3>
+                        <p className="text-xs text-muted-foreground">Recevez un lien sécurisé par email</p>
+                      </div>
+                    </div>
+                    <form onSubmit={onForgotPassword} className="space-y-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="forgot-email">Email</Label>
+                        <Input id="forgot-email" type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} required placeholder="nom@entreprise.com" />
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <Button type="button" variant="outline" className="flex-1 rounded-xl" onClick={() => setForgotOpen(false)}>Annuler</Button>
+                        <Button type="submit" disabled={forgotSending} className="flex-1 rounded-xl font-bold">
+                          {forgotSending ? <><Loader2 className="size-4 me-2 animate-spin" />Envoi…</> : "Envoyer le lien"}
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

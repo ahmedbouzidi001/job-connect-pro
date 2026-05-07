@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SkillsRouteImport } from './routes/skills'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RecruiterJobsRouteImport } from './routes/recruiter-jobs'
 import { Route as RecruiterRouteImport } from './routes/recruiter'
 import { Route as ProfileRouteImport } from './routes/profile'
@@ -28,6 +29,11 @@ import { Route as RecruiterJobsJobIdRouteImport } from './routes/recruiter-jobs.
 const SkillsRoute = SkillsRouteImport.update({
   id: '/skills',
   path: '/skills',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RecruiterJobsRoute = RecruiterJobsRouteImport.update({
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/recruiter': typeof RecruiterRoute
   '/recruiter-jobs': typeof RecruiterJobsRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/skills': typeof SkillsRoute
   '/recruiter-jobs/$jobId': typeof RecruiterJobsJobIdRoute
 }
@@ -132,6 +139,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/recruiter': typeof RecruiterRoute
   '/recruiter-jobs': typeof RecruiterJobsRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/skills': typeof SkillsRoute
   '/recruiter-jobs/$jobId': typeof RecruiterJobsJobIdRoute
 }
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/recruiter': typeof RecruiterRoute
   '/recruiter-jobs': typeof RecruiterJobsRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/skills': typeof SkillsRoute
   '/recruiter-jobs/$jobId': typeof RecruiterJobsJobIdRoute
 }
@@ -169,6 +178,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/recruiter'
     | '/recruiter-jobs'
+    | '/reset-password'
     | '/skills'
     | '/recruiter-jobs/$jobId'
   fileRoutesByTo: FileRoutesByTo
@@ -186,6 +196,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/recruiter'
     | '/recruiter-jobs'
+    | '/reset-password'
     | '/skills'
     | '/recruiter-jobs/$jobId'
   id:
@@ -203,6 +214,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/recruiter'
     | '/recruiter-jobs'
+    | '/reset-password'
     | '/skills'
     | '/recruiter-jobs/$jobId'
   fileRoutesById: FileRoutesById
@@ -221,6 +233,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   RecruiterRoute: typeof RecruiterRoute
   RecruiterJobsRoute: typeof RecruiterJobsRouteWithChildren
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SkillsRoute: typeof SkillsRoute
 }
 
@@ -231,6 +244,13 @@ declare module '@tanstack/react-router' {
       path: '/skills'
       fullPath: '/skills'
       preLoaderRoute: typeof SkillsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/recruiter-jobs': {
@@ -360,6 +380,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   RecruiterRoute: RecruiterRoute,
   RecruiterJobsRoute: RecruiterJobsRouteWithChildren,
+  ResetPasswordRoute: ResetPasswordRoute,
   SkillsRoute: SkillsRoute,
 }
 export const routeTree = rootRouteImport
