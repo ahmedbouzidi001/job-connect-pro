@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      application_drafts: {
+        Row: {
+          company: string
+          cover_letter: string | null
+          created_at: string
+          id: string
+          job_title: string
+          job_url: string | null
+          match_score: number | null
+          status: string
+          tailored_cv: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company: string
+          cover_letter?: string | null
+          created_at?: string
+          id?: string
+          job_title: string
+          job_url?: string | null
+          match_score?: number | null
+          status?: string
+          tailored_cv?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company?: string
+          cover_letter?: string | null
+          created_at?: string
+          id?: string
+          job_title?: string
+          job_url?: string | null
+          match_score?: number | null
+          status?: string
+          tailored_cv?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       applications: {
         Row: {
           applied_at: string | null
@@ -148,6 +190,101 @@ export type Database = {
         }
         Relationships: []
       }
+      job_alert_matches: {
+        Row: {
+          alert_id: string
+          company: string
+          created_at: string
+          id: string
+          job_title: string
+          job_url: string
+          notified: boolean
+          score: number
+          summary: string | null
+          user_id: string
+        }
+        Insert: {
+          alert_id: string
+          company: string
+          created_at?: string
+          id?: string
+          job_title: string
+          job_url: string
+          notified?: boolean
+          score: number
+          summary?: string | null
+          user_id: string
+        }
+        Update: {
+          alert_id?: string
+          company?: string
+          created_at?: string
+          id?: string
+          job_title?: string
+          job_url?: string
+          notified?: boolean
+          score?: number
+          summary?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_alert_matches_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "job_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_alerts: {
+        Row: {
+          contract: string | null
+          country_code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          keywords: string | null
+          last_run_at: string | null
+          location: string
+          min_score: number
+          role: string
+          seniority: string | null
+          user_id: string
+          work_type: string | null
+        }
+        Insert: {
+          contract?: string | null
+          country_code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          keywords?: string | null
+          last_run_at?: string | null
+          location: string
+          min_score?: number
+          role: string
+          seniority?: string | null
+          user_id: string
+          work_type?: string | null
+        }
+        Update: {
+          contract?: string | null
+          country_code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          keywords?: string | null
+          last_run_at?: string | null
+          location?: string
+          min_score?: number
+          role?: string
+          seniority?: string | null
+          user_id?: string
+          work_type?: string | null
+        }
+        Relationships: []
+      }
       job_applications: {
         Row: {
           candidate_id: string
@@ -200,6 +337,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      job_search_cache: {
+        Row: {
+          cache_key: string
+          created_at: string
+          expires_at: string
+          id: string
+          raw_jobs: Json
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          raw_jobs?: Json
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          raw_jobs?: Json
+        }
+        Relationships: []
       }
       jobs: {
         Row: {
