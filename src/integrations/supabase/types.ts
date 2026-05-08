@@ -121,6 +121,30 @@ export type Database = {
           },
         ]
       }
+      billing_events: {
+        Row: {
+          created_at: string
+          id: string
+          payload: Json
+          stripe_event_id: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          payload: Json
+          stripe_event_id: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          payload?: Json
+          stripe_event_id?: string
+          type?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           candidate_id: string
@@ -533,12 +557,16 @@ export type Database = {
           location: string | null
           market_preference: Database["public"]["Enums"]["market_type"] | null
           phone: string | null
+          plan_tier: string
           preferred_country: string | null
           preferred_language: string | null
           preferred_template: string | null
           premium_until: string | null
           recruiter_visible: boolean | null
           skills: string[] | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_status: string | null
           target_role: string | null
           updated_at: string
           user_id: string
@@ -564,12 +592,16 @@ export type Database = {
           location?: string | null
           market_preference?: Database["public"]["Enums"]["market_type"] | null
           phone?: string | null
+          plan_tier?: string
           preferred_country?: string | null
           preferred_language?: string | null
           preferred_template?: string | null
           premium_until?: string | null
           recruiter_visible?: boolean | null
           skills?: string[] | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
           target_role?: string | null
           updated_at?: string
           user_id: string
@@ -595,12 +627,16 @@ export type Database = {
           location?: string | null
           market_preference?: Database["public"]["Enums"]["market_type"] | null
           phone?: string | null
+          plan_tier?: string
           preferred_country?: string | null
           preferred_language?: string | null
           preferred_template?: string | null
           premium_until?: string | null
           recruiter_visible?: boolean | null
           skills?: string[] | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
           target_role?: string | null
           updated_at?: string
           user_id?: string
