@@ -54,8 +54,9 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
           return new Response(`Invalid signature: ${(e as Error).message}`, { status: 400 });
         }
         // idempotency
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: dupErr } = await supabaseAdmin.from("billing_events")
-          .insert([{ stripe_event_id: evt.id, type: evt.type, payload: evt as unknown as Record<string, unknown> }]);
+          .insert([{ stripe_event_id: evt.id, type: evt.type, payload: evt as any }]);
         if (dupErr && dupErr.code === "23505") return new Response("ok", { status: 200 });
 
         try {
