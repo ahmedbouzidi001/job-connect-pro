@@ -55,7 +55,7 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
         }
         // idempotency
         const { error: dupErr } = await supabaseAdmin.from("billing_events")
-          .insert({ stripe_event_id: evt.id, type: evt.type, payload: evt as unknown as object });
+          .insert([{ stripe_event_id: evt.id, type: evt.type, payload: evt as unknown as Record<string, unknown> }]);
         if (dupErr && dupErr.code === "23505") return new Response("ok", { status: 200 });
 
         try {
