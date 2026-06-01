@@ -11,7 +11,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { generateApplication } from "@/server/cv.functions";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { exportCvPdf, exportCoverLetterPdf, type StructuredCV, type CoverLetter, type CvTemplate } from "@/lib/pdf-export";
+import { exportCvPdf, exportCoverLetterPdf, fetchImageAsDataUrl, type StructuredCV, type CoverLetter, type CvTemplate } from "@/lib/pdf-export";
 
 export const Route = createFileRoute("/generator")({ component: GeneratorPage });
 
@@ -24,6 +24,7 @@ function GeneratorPage() {
   const generate = useServerFn(generateApplication);
 
   const [cvText, setCvText] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [jobTitle, setJobTitle] = useState("");
   const [company, setCompany] = useState("");
   const [jobDescription, setJobDescription] = useState("");
@@ -37,9 +38,10 @@ function GeneratorPage() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("cv_raw_text, preferred_template").eq("user_id", user.id).single().then(({ data }) => {
+    supabase.from("profiles").select("cv_raw_text, preferred_template, avatar_url").eq("user_id", user.id).single().then(({ data }) => {
       if (data?.cv_raw_text) setCvText(data.cv_raw_text);
       if (data?.preferred_template) setTemplate(data.preferred_template as CvTemplate);
+      if (data?.avatar_url) setAvatarUrl(data.avatar_url);
     });
   }, [user]);
 
@@ -72,9 +74,12 @@ function GeneratorPage() {
     } finally { setGenerating(false); }
   };
 
-  const downloadCv = () => {
+  const downloadCv = async () => {
     if (!output) return;
-    exportCvPdf(output.cv, template, `CV-${output.cv.full_name.replace(/\s+/g, "_")}-${company}.pdf`);
+    const photo = (template === "sidebar" || template === "latex") && avatarUrl
+      ? await fetchImageAsDataUrl(avatarUrl)
+      : null;
+    exportCvPdf(output.cv, template, `CV-${output.cv.full_name.replace(/\s+/g, "_")}-${company}.pdf`, photo);
   };
   const downloadLm = () => {
     if (!output) return;
@@ -103,14 +108,23 @@ function GeneratorPage() {
 
             <div className="glass-panel rounded-3xl p-5 space-y-3">
               <label className="text-sm font-bold block">Choisis ton template</label>
-              <div className="grid grid-cols-3 gap-2">
-                {([{v:"modern",l:"Modern",d:"Teal"},{v:"classic",l:"Classique",d:"Slate"},{v:"executive",l:"Executive",d:"Brown"}] as const).map(o => (
+              <div className="grid grid-cols-5 gap-2">
+                {([
+                  {v:"modern",l:"Modern",d:"Teal"},
+                  {v:"classic",l:"Classique",d:"Slate"},
+                  {v:"executive",l:"Executive",d:"Brown"},
+                  {v:"sidebar",l:"Sidebar",d:"Photo"},
+                  {v:"latex",l:"LaTeX",d:"ATS"},
+                ] as const).map(o => (
                   <button key={o.v} onClick={() => setTemplate(o.v)}
-                    className={`h-16 rounded-xl border-2 text-xs font-bold transition-all flex flex-col items-center justify-center ${template===o.v ? "border-hyper-cyan bg-hyper-cyan/10" : "border-border text-muted-foreground hover:border-foreground/40"}`}>
+                    className={`h-16 rounded-xl border-2 text-[11px] font-bold transition-all flex flex-col items-center justify-center ${template===o.v ? "border-hyper-cyan bg-hyper-cyan/10" : "border-border text-muted-foreground hover:border-foreground/40"}`}>
                     <span>{o.l}</span><span className="text-[10px] opacity-60">{o.d}</span>
                   </button>
                 ))}
               </div>
+              {(template === "sidebar" || template === "latex") && !avatarUrl && (
+                <p className="text-[11px] text-amber-500/90">💡 Ajoute une photo de profil dans <Link to="/profile" className="underline">/profile</Link> pour qu'elle apparaisse sur le PDF.</p>
+              )}
             </div>
 
             <div className="glass-panel rounded-3xl p-5 space-y-3">

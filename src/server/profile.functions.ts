@@ -52,7 +52,7 @@ const ProfileInput = z.object({
   languages: z.array(z.string().min(1).max(60)).max(15).optional().default([]),
   links: z.record(z.string(), z.string().max(400)).optional().default({}),
   cv_structured: CvStructuredSchema,
-  preferred_template: z.enum(["modern", "classic", "executive"]).optional().default("modern"),
+  preferred_template: z.enum(["modern", "classic", "executive", "sidebar", "latex"]).optional().default("modern"),
   avatar_url: z.string().max(500).optional().nullable(),
 });
 

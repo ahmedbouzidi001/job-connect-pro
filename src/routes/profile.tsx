@@ -46,7 +46,7 @@ function ProfilePage() {
   const [linkedin, setLinkedin] = useState("");
   const [github, setGithub] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [template, setTemplate] = useState<"modern" | "classic" | "executive">("modern");
+  const [template, setTemplate] = useState<"modern" | "classic" | "executive" | "sidebar" | "latex">("modern");
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [educations, setEducations] = useState<Education[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -74,7 +74,7 @@ function ProfilePage() {
       setLinkedin(links.linkedin ?? "");
       setGithub(links.github ?? "");
       setAvatarUrl((p.avatar_url as string) ?? null);
-      setTemplate(((p.preferred_template as "modern" | "classic" | "executive") ?? "modern"));
+      setTemplate(((p.preferred_template as "modern" | "classic" | "executive" | "sidebar" | "latex") ?? "modern"));
       const cv = (p.cv_structured as { experiences?: Experience[]; educations?: Education[]; projects?: Project[]; certifications?: Cert[] } | null) ?? {};
       setExperiences(cv.experiences ?? []);
       setEducations(cv.educations ?? []);
@@ -277,7 +277,7 @@ function ProfilePage() {
         <section className="glass-panel rounded-2xl p-6">
           <h2 className="font-bold mb-4 flex items-center gap-2"><Sparkles className="size-4 text-[color:var(--hyper-cyan)]" /> Template CV préféré</h2>
           <div className="grid grid-cols-3 gap-3">
-            {(["modern", "classic", "executive"] as const).map(t => (
+            {(["modern", "classic", "executive", "sidebar", "latex"] as const).map(t => (
               <button key={t} onClick={() => setTemplate(t)} className={`p-4 rounded-xl border-2 text-sm font-bold capitalize ${template === t ? "border-[color:var(--hyper-cyan)] bg-[color:var(--hyper-cyan)]/10" : "border-border text-muted-foreground"}`}>{t}</button>
             ))}
           </div>

@@ -7,12 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Search, Sparkles, Bookmark, Wand2, ArrowLeft, ArrowRight, Briefcase, MapPin, AlertCircle, Eye, Send, Star, Mail, ExternalLink, Bell, Zap } from "lucide-react";
+import { Loader2, Search, Sparkles, Bookmark, Wand2, ArrowLeft, ArrowRight, Briefcase, MapPin, AlertCircle, Eye, Send, Star, Mail, ExternalLink, Bell, Zap, Rocket } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { searchJobs, saveJobAsApplication, scrapeJobContent } from "@/server/jobs.functions";
 import { listPublicInternalJobs, applyToJob } from "@/server/recruiter-jobs.functions";
 import { createAlert } from "@/server/alerts.functions";
 import { generateApplicationDraft } from "@/server/drafts.functions";
+import { autoApplyToMatches } from "@/server/auto-apply.functions";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -42,6 +43,7 @@ function JobsPage() {
   const apply = useServerFn(applyToJob);
   const createAlertFn = useServerFn(createAlert);
   const generateDraft = useServerFn(generateApplicationDraft);
+  const autoApply = useServerFn(autoApplyToMatches);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [hasCv, setHasCv] = useState<boolean | null>(null);
@@ -64,6 +66,7 @@ function JobsPage() {
   const [applying, setApplying] = useState(false);
   const [draftingId, setDraftingId] = useState<string | null>(null);
   const [creatingAlert, setCreatingAlert] = useState(false);
+  const [autoApplying, setAutoApplying] = useState(false);
   const [draftPreview, setDraftPreview] = useState<{ cv: string; letter: string; title: string } | null>(null);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/auth" }); }, [user, loading, navigate]);
@@ -128,6 +131,21 @@ function JobsPage() {
       toast.success("Alerte créée — tu seras notifié des nouvelles offres");
     } catch (e) { toast.error((e as Error).message); }
     finally { setCreatingAlert(false); }
+  };
+
+  const handleAutoApplyAll = async () => {
+    const targets = jobs.filter(j => j.score >= 80);
+    if (targets.length === 0) { toast.error("Aucune offre ≥ 80% — affine ta recherche"); return; }
+    if (!confirm(`Lancer l'auto-candidature sur ${targets.length} offre(s) ≥ 80% ? (réservé Pro/Business)`)) return;
+    setAutoApplying(true);
+    try {
+      const r = await autoApply({ data: {
+        jobs: targets.map(j => ({ title: j.title, company: j.company, url: j.url, description: j.description?.slice(0, 4000) || j.summary, matchScore: j.score })),
+        language: "fr" as const, minScore: 80,
+      }}) as { applied: number; skipped: number };
+      toast.success(`Auto-candidature : ${r.applied} envoyée(s), ${r.skipped} ignorée(s)`);
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setAutoApplying(false); }
   };
 
   const handleAutoDraft = async (job: ScoredJob) => {
@@ -260,6 +278,12 @@ function JobsPage() {
                   {creatingAlert ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Bell className="size-3.5 mr-1.5" />}
                   Créer une alerte
                 </Button>
+                {jobs.some(j => j.score >= 80) && (
+                  <Button onClick={handleAutoApplyAll} disabled={autoApplying} size="sm" className="rounded-full font-bold bg-[color:var(--hyper-lime)] text-black hover:bg-[color:var(--hyper-lime)]/90">
+                    {autoApplying ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Rocket className="size-3.5 mr-1.5" />}
+                    Auto-candidater ≥80%
+                  </Button>
+                )}
                 <Button onClick={() => setStep(1)} variant="outline" size="sm" className="rounded-full"><Search className="size-3.5 mr-1.5" /> Nouvelle recherche</Button>
               </div>
             </div>
