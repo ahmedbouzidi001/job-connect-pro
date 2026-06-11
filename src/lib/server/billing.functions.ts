@@ -4,6 +4,7 @@ import { attachSupabaseAuth } from "@/integrations/supabase/auth-client-middlewa
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { z } from "zod";
 import Stripe from "stripe";
+import { enforceRateLimit, audit } from "./rate-limit.server";
 
 const PLANS = {
   pro: { name: "HireMe Pro", amount: 999, currency: "eur", interval: "month" as const },
@@ -22,6 +23,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ plan: z.enum(["pro", "business"]) }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId, claims } = context;
+    await enforceRateLimit(userId, "checkout", 5);
     const stripe = stripeClient();
     const plan = PLANS[data.plan];
 
@@ -59,7 +61,8 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       metadata: { user_id: userId, plan: data.plan },
       subscription_data: { metadata: { user_id: userId, plan: data.plan } },
       allow_promotion_codes: true,
-    });
+    }, { idempotencyKey: `checkout_${userId}_${data.plan}_${Date.now() / 60000 | 0}` });
+    await audit({ userId, action: "checkout_session_created", metadata: { plan: data.plan } });
 
     return { url: session.url };
   });
