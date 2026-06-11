@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-client-middleware";
 import { z } from "zod";
+import { enforceRateLimit, audit, requirePremium, logError } from "./rate-limit.server";
 
 const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
@@ -23,11 +24,11 @@ export const autoApplyToMatches = createServerFn({ method: "POST" })
   }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    await requirePremium(userId, "pro");
+    // Rate limit: max 3 batches per minute (each batch can apply to 20 jobs)
+    await enforceRateLimit(userId, "auto_apply", 3);
     const { data: profile } = await supabase.from("profiles")
-      .select("plan_tier, is_premium, cv_raw_text, full_name").eq("user_id", userId).single();
-    if (!profile?.is_premium && profile?.plan_tier === "free") {
-      throw new Error("L'auto-candidature est réservée aux plans Pro et Business.");
-    }
+      .select("cv_raw_text, full_name").eq("user_id", userId).single();
     const cv = (profile?.cv_raw_text || "").slice(0, 8000);
     if (cv.length < 100) throw new Error("Analyse d'abord ton CV avant l'auto-candidature.");
 
@@ -72,9 +73,11 @@ export const autoApplyToMatches = createServerFn({ method: "POST" })
         applied++;
         results.push({ title: job.title, company: job.company, ok: true });
       } catch (e) {
+        await logError({ userId, source: "auto_apply", message: (e as Error).message, context: { job: job.title } });
         results.push({ title: job.title, company: job.company, ok: false, message: (e as Error).message });
       }
     }
 
+    await audit({ userId, action: "auto_apply_batch", metadata: { applied, total: data.jobs.length, minScore: data.minScore } });
     return { applied, skipped: data.jobs.length - targets.length, results };
   });
