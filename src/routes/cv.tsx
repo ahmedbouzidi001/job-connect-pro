@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Upload, FileText, Sparkles, CheckCircle2, AlertCircle, Lightbulb, Target } from "lucide-react";
 import { extractPdfText } from "@/lib/pdf-parse";
 import { useServerFn } from "@tanstack/react-start";
-import { analyzeCv } from "@/server/cv.functions";
+import { analyzeCv } from "@/lib/server/cv.functions";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 

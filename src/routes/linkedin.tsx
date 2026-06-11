@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Sparkles, Linkedin, Copy, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { optimizeLinkedIn } from "@/server/cv.functions";
+import { optimizeLinkedIn } from "@/lib/server/cv.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/linkedin")({

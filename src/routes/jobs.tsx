@@ -9,11 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, Search, Sparkles, Bookmark, Wand2, ArrowLeft, ArrowRight, Briefcase, MapPin, AlertCircle, Eye, Send, Star, Mail, ExternalLink, Bell, Zap, Rocket } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { searchJobs, saveJobAsApplication, scrapeJobContent } from "@/server/jobs.functions";
-import { listPublicInternalJobs, applyToJob } from "@/server/recruiter-jobs.functions";
-import { createAlert } from "@/server/alerts.functions";
-import { generateApplicationDraft } from "@/server/drafts.functions";
-import { autoApplyToMatches } from "@/server/auto-apply.functions";
+import { searchJobs, saveJobAsApplication, scrapeJobContent } from "@/lib/server/jobs.functions";
+import { listPublicInternalJobs, applyToJob } from "@/lib/server/recruiter-jobs.functions";
+import { createAlert } from "@/lib/server/alerts.functions";
+import { generateApplicationDraft } from "@/lib/server/drafts.functions";
+import { autoApplyToMatches } from "@/lib/server/auto-apply.functions";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
