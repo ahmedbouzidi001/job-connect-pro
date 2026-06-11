@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Plus, Briefcase, Users, ArrowRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useServerFn } from "@tanstack/react-start";
-import { createInternalJob, listMyJobs } from "@/server/recruiter-jobs.functions";
+import { createInternalJob, listMyJobs } from "@/lib/api/recruiter-jobs.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/recruiter-jobs")({ component: RecruiterJobsPage });

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Sparkles, Wand2, Download, FileText, Mail } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { generateApplication } from "@/server/cv.functions";
+import { generateApplication } from "@/lib/api/cv.functions";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { exportCvPdf, exportCoverLetterPdf, fetchImageAsDataUrl, type StructuredCV, type CoverLetter, type CvTemplate } from "@/lib/pdf-export";

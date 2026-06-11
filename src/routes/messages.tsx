@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, MessageSquare, Send } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { listConversations, listMessages, sendMessage } from "@/server/recruiter.functions";
+import { listConversations, listMessages, sendMessage } from "@/lib/api/recruiter.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 

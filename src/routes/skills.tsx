@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Sparkles, GraduationCap, ExternalLink, Target } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { recommendCertifications } from "@/server/cv.functions";
+import { recommendCertifications } from "@/lib/api/cv.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 

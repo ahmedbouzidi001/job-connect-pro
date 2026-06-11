@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Loader2, Check, Crown, Sparkles, Building2, Settings2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { createCheckoutSession, createBillingPortalSession, getBillingStatus } from "@/server/billing.functions";
+import { createCheckoutSession, createBillingPortalSession, getBillingStatus } from "@/lib/api/billing.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/pricing")({ component: PricingPage });
