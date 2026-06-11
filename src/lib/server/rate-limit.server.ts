@@ -1,5 +1,6 @@
 // Server-only rate limit + audit helpers. Use inside createServerFn handlers.
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { Json } from "@/integrations/supabase/types";
 
 /**
  * Throws if the user exceeds maxPerMinute calls in the current minute window
@@ -37,15 +38,15 @@ export async function audit(params: {
   userAgent?: string | null;
 }) {
   try {
-    await supabaseAdmin.from("audit_log").insert({
+    await supabaseAdmin.from("audit_log").insert([{
       user_id: params.userId,
       action: params.action,
       resource_type: params.resourceType ?? null,
       resource_id: params.resourceId ?? null,
-      metadata: params.metadata ?? {},
+      metadata: (params.metadata ?? {}) as Json,
       ip_address: params.ip ?? null,
       user_agent: params.userAgent ?? null,
-    });
+    }]);
   } catch (e) {
     console.error("[audit] insert failed", e);
   }
@@ -60,14 +61,14 @@ export async function logError(params: {
   level?: "error" | "warn" | "info";
 }) {
   try {
-    await supabaseAdmin.from("error_log").insert({
+    await supabaseAdmin.from("error_log").insert([{
       user_id: params.userId ?? null,
       level: params.level ?? "error",
       source: params.source,
       message: params.message.slice(0, 2000),
       stack: params.stack?.slice(0, 8000) ?? null,
-      context: params.context ?? {},
-    });
+      context: (params.context ?? {}) as Json,
+    }]);
   } catch (e) {
     console.error("[error-log] insert failed", e);
   }
