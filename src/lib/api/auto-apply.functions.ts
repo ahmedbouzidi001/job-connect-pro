@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-client-middleware";
 import { z } from "zod";
-import { enforceRateLimit, audit, requirePremium, logError } from "./rate-limit.server";
+import { enforceRateLimit, audit, requirePremium, logError } from "./rate-limit";
 
 const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 

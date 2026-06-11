@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Search, Sparkles, MessageSquare, MapPin, Briefcase, Star } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { searchCandidates, searchCandidatesNL, startConversation } from "@/lib/server/recruiter.functions";
+import { searchCandidates, searchCandidatesNL, startConversation } from "@/lib/api/recruiter.functions";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Save, Plus, Trash2, User as UserIcon, Camera, Sparkles } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { getMyProfile, upsertMyProfile } from "@/lib/server/profile.functions";
+import { getMyProfile, upsertMyProfile } from "@/lib/api/profile.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 

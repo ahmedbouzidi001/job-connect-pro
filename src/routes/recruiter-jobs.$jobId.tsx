@@ -5,8 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, Sparkles, Star, MessageSquare, MapPin, User as UserIcon, Wand2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { listJobApplications, updateApplication, scoreApplicationsAI, suggestCandidatesForJob } from "@/lib/server/recruiter-jobs.functions";
-import { startConversation } from "@/lib/server/recruiter.functions";
+import { listJobApplications, updateApplication, scoreApplicationsAI, suggestCandidatesForJob } from "@/lib/api/recruiter-jobs.functions";
+import { startConversation } from "@/lib/api/recruiter.functions";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 

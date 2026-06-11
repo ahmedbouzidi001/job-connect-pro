@@ -4,7 +4,7 @@ import { attachSupabaseAuth } from "@/integrations/supabase/auth-client-middlewa
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { z } from "zod";
 import Stripe from "stripe";
-import { enforceRateLimit, audit } from "./rate-limit.server";
+import { enforceRateLimit, audit } from "./rate-limit";
 
 const PLANS = {
   pro: { name: "HireMe Pro", amount: 999, currency: "eur", interval: "month" as const },
