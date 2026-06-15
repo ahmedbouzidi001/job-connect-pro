@@ -140,7 +140,7 @@ async function firecrawlSearch(query: string, limit: number, countryCode: string
       limit,
       country: countryCode === "ANY" ? undefined : countryCode,
       lang: language,
-      tbs: "qdr:m",
+      tbs: "qdr:y",
       scrapeOptions: { formats: ["markdown"], onlyMainContent: true },
     }),
   });
@@ -163,6 +163,106 @@ async function firecrawlSearch(query: string, limit: number, countryCode: string
       snippet: String(it.markdown || it.description || it.snippet || it.metadata?.description || "").slice(0, 4000),
     };
   }).filter((j) => j.url);
+}
+
+/* ---------- Free job APIs (no key required) ---------- */
+function matchesText(haystack: string, needles: string[]) {
+  const h = haystack.toLowerCase();
+  return needles.every(n => h.includes(n.toLowerCase()));
+}
+
+async function remotiveSearch(role: string, keywords: string | null): Promise<RawJob[]> {
+  try {
+    const q = encodeURIComponent([role, keywords].filter(Boolean).join(" ").slice(0, 80));
+    const res = await fetch(`https://remotive.com/api/remote-jobs?search=${q}&limit=30`, { headers: { Accept: "application/json" } });
+    if (!res.ok) return [];
+    const json = await res.json() as { jobs?: any[] };
+    return (json.jobs ?? []).slice(0, 30).map((j: any) => ({
+      title: String(j.title ?? "").slice(0, 200),
+      company: String(j.company_name ?? "").slice(0, 120),
+      location: j.candidate_required_location ?? "Remote",
+      url: String(j.url ?? ""),
+      source: "remotive.com",
+      snippet: String(j.description ?? "").replace(/<[^>]+>/g, " ").slice(0, 3500),
+    })).filter(j => j.url && j.title);
+  } catch { return []; }
+}
+
+async function remoteokSearch(role: string): Promise<RawJob[]> {
+  try {
+    const res = await fetch(`https://remoteok.com/api`, { headers: { "User-Agent": "HireMe/1.0", Accept: "application/json" } });
+    if (!res.ok) return [];
+    const json = await res.json() as any[];
+    const tokens = role.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+    return (json ?? []).filter((j: any) => j && j.position && j.url).filter((j: any) => {
+      const t = `${j.position} ${j.tags?.join(" ") ?? ""}`.toLowerCase();
+      return tokens.some(tok => t.includes(tok));
+    }).slice(0, 25).map((j: any) => ({
+      title: String(j.position).slice(0, 200),
+      company: String(j.company ?? "").slice(0, 120),
+      location: j.location ?? "Remote",
+      url: String(j.url),
+      source: "remoteok.com",
+      snippet: String(j.description ?? "").replace(/<[^>]+>/g, " ").slice(0, 3500),
+    }));
+  } catch { return []; }
+}
+
+async function arbeitnowSearch(role: string, location: string): Promise<RawJob[]> {
+  try {
+    const res = await fetch(`https://www.arbeitnow.com/api/job-board-api`, { headers: { Accept: "application/json" } });
+    if (!res.ok) return [];
+    const json = await res.json() as { data?: any[] };
+    const tokens = [role.toLowerCase()];
+    if (location) tokens.push(location.toLowerCase());
+    return (json.data ?? []).filter((j: any) => {
+      const t = `${j.title ?? ""} ${j.location ?? ""} ${(j.tags ?? []).join(" ")}`.toLowerCase();
+      return matchesText(t, [role.toLowerCase()]) || tokens.some(tok => t.includes(tok));
+    }).slice(0, 25).map((j: any) => ({
+      title: String(j.title ?? "").slice(0, 200),
+      company: String(j.company_name ?? "").slice(0, 120),
+      location: j.location ?? null,
+      url: String(j.url ?? ""),
+      source: "arbeitnow.com",
+      snippet: String(j.description ?? "").replace(/<[^>]+>/g, " ").slice(0, 3500),
+    })).filter((j: RawJob) => j.url);
+  } catch { return []; }
+}
+
+async function museSearch(role: string, location: string): Promise<RawJob[]> {
+  try {
+    const params = new URLSearchParams({ page: "0" });
+    if (location) params.append("location", location);
+    const res = await fetch(`https://www.themuse.com/api/public/jobs?${params}`, { headers: { Accept: "application/json" } });
+    if (!res.ok) return [];
+    const json = await res.json() as { results?: any[] };
+    const tokens = role.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+    return (json.results ?? []).filter((j: any) => {
+      const t = `${j.name ?? ""} ${j.categories?.map((c: any) => c.name).join(" ") ?? ""}`.toLowerCase();
+      return tokens.some(tok => t.includes(tok));
+    }).slice(0, 20).map((j: any) => ({
+      title: String(j.name ?? "").slice(0, 200),
+      company: String(j.company?.name ?? "").slice(0, 120),
+      location: j.locations?.map((l: any) => l.name).join(", ") ?? null,
+      url: String(j.refs?.landing_page ?? ""),
+      source: "themuse.com",
+      snippet: String(j.contents ?? "").replace(/<[^>]+>/g, " ").slice(0, 3500),
+    })).filter((j: RawJob) => j.url);
+  } catch { return []; }
+}
+
+async function fetchFreeApis(p: { role: string; location: string; keywords: string | null; workType: string }): Promise<RawJob[]> {
+  const includeRemote = p.workType === "remote" || p.workType === "any";
+  const tasks: Promise<RawJob[]>[] = [
+    arbeitnowSearch(p.role, p.location),
+    museSearch(p.role, p.location),
+  ];
+  if (includeRemote) {
+    tasks.push(remotiveSearch(p.role, p.keywords));
+    tasks.push(remoteokSearch(p.role));
+  }
+  const out = await Promise.allSettled(tasks);
+  return out.flatMap(r => r.status === "fulfilled" ? r.value : []);
 }
 
 export const searchJobs = createServerFn({ method: "POST" })
