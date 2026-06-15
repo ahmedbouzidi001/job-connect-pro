@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Search, Sparkles, Bookmark, Wand2, ArrowLeft, ArrowRight, Briefcase, MapPin, AlertCircle, Eye, Send, Star, Mail, ExternalLink, Bell, Zap, Rocket } from "lucide-react";
+import { Loader2, Search, Sparkles, Bookmark, Wand2, ArrowLeft, ArrowRight, Briefcase, MapPin, AlertCircle, Eye, Send, Star, Mail, ExternalLink, Bell, Zap, Rocket, Filter, X } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useServerFn } from "@tanstack/react-start";
 import { searchJobs, saveJobAsApplication, scrapeJobContent } from "@/lib/api/jobs.functions";
 import { listPublicInternalJobs, applyToJob } from "@/lib/api/recruiter-jobs.functions";
@@ -68,6 +71,26 @@ function JobsPage() {
   const [creatingAlert, setCreatingAlert] = useState(false);
   const [autoApplying, setAutoApplying] = useState(false);
   const [draftPreview, setDraftPreview] = useState<{ cv: string; letter: string; title: string } | null>(null);
+  const [minScore, setMinScore] = useState(0);
+  const [hideAggregators, setHideAggregators] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
+
+  // Restore last criteria
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("hireme:last-search");
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      if (s.role && !role) setRole(s.role);
+      if (s.location && !location) setLocation(s.location);
+      if (s.countryCode) setCountryCode(s.countryCode);
+      if (s.workType) setWorkType(s.workType);
+      if (s.contract) setContract(s.contract);
+      if (s.seniority) setSeniority(s.seniority);
+      if (s.keywords) setKeywords(s.keywords);
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/auth" }); }, [user, loading, navigate]);
   useEffect(() => {
@@ -97,6 +120,7 @@ function JobsPage() {
   const handleSearch = async () => {
     if (!role.trim() || !location.trim()) { toast.error("Indique le poste et le lieu"); return; }
     setSearching(true); setJobs([]);
+    try { localStorage.setItem("hireme:last-search", JSON.stringify({ role, location, countryCode, workType, contract, seniority, keywords })); } catch {}
     try {
       const res = await search({ data: { role: role.trim(), location: location.trim(), countryCode, workType, contract, seniority, salaryMin: null, salaryCurrency: "EUR" as const, language: "fr" as const, keywords: keywords.trim() || null, limit: 100 }}) as { jobs: ScoredJob[]; message: string | null };
       setJobs(res.jobs); setStep(3);
@@ -164,6 +188,21 @@ function JobsPage() {
   };
 
   const BLOCKED_DOMAINS = ["linkedin.com", "indeed.com", "indeed.fr", "indeed.co.uk", "indeed.de", "glassdoor.com", "ziprecruiter.com"];
+  const AGGREGATOR_DOMAINS = ["linkedin.com", "indeed.com", "indeed.fr", "indeed.co.uk", "indeed.de", "glassdoor.com", "ziprecruiter.com"];
+
+  const sources = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const j of jobs) counts.set(j.source, (counts.get(j.source) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  }, [jobs]);
+
+  const filteredJobs = useMemo(() => jobs.filter(j => {
+    if (j.score < minScore) return false;
+    if (hideAggregators && AGGREGATOR_DOMAINS.some(d => j.source.includes(d))) return false;
+    if (sourceFilter !== "all" && j.source !== sourceFilter) return false;
+    return true;
+  }), [jobs, minScore, hideAggregators, sourceFilter]);
+
   const isBlockedDomain = (url: string) => {
     try { const h = new URL(url).hostname.replace(/^www\./, ""); return BLOCKED_DOMAINS.some(d => h.includes(d)); } catch { return false; }
   };
@@ -272,7 +311,7 @@ function JobsPage() {
         {step === 3 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-display text-xl font-bold">{jobs.length} offres scorées</h2>
+              <h2 className="font-display text-xl font-bold">{filteredJobs.length} / {jobs.length} offres</h2>
               <div className="flex gap-2">
                 <Button onClick={handleCreateAlert} disabled={creatingAlert} variant="outline" size="sm" className="rounded-full">
                   {creatingAlert ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Bell className="size-3.5 mr-1.5" />}
@@ -287,10 +326,56 @@ function JobsPage() {
                 <Button onClick={() => setStep(1)} variant="outline" size="sm" className="rounded-full"><Search className="size-3.5 mr-1.5" /> Nouvelle recherche</Button>
               </div>
             </div>
-            {jobs.length === 0 && !searching && (
+
+            {jobs.length > 0 && (
+              <div className="glass-panel rounded-2xl p-4 flex flex-wrap items-center gap-4">
+                <div className="inline-flex items-center gap-2 text-xs font-bold uppercase text-muted-foreground"><Filter className="size-3.5" /> Filtres</div>
+                <div className="flex items-center gap-3 min-w-[220px]">
+                  <span className="text-xs text-muted-foreground">Score ≥</span>
+                  <Slider value={[minScore]} onValueChange={(v) => setMinScore(v[0])} min={0} max={100} step={5} className="w-32" />
+                  <span className="text-xs font-mono w-8 tabular-nums">{minScore}</span>
+                </div>
+                <label className="flex items-center gap-2 text-xs">
+                  <Switch checked={hideAggregators} onCheckedChange={setHideAggregators} />
+                  Masquer LinkedIn/Indeed
+                </label>
+                {sources.length > 1 && (
+                  <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                    <SelectTrigger className="h-8 w-48 text-xs"><SelectValue placeholder="Toutes sources" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Toutes sources ({jobs.length})</SelectItem>
+                      {sources.map(([src, n]) => <SelectItem key={src} value={src}>{src} ({n})</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )}
+                {(minScore > 0 || hideAggregators || sourceFilter !== "all") && (
+                  <Button onClick={() => { setMinScore(0); setHideAggregators(false); setSourceFilter("all"); }} variant="ghost" size="sm" className="h-8 text-xs"><X className="size-3 mr-1" />Réinitialiser</Button>
+                )}
+              </div>
+            )}
+
+            {searching && (
+              <div className="space-y-3">
+                {[1,2,3].map(i => (
+                  <div key={i} className="glass-panel rounded-2xl p-5 space-y-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 space-y-2"><Skeleton className="h-5 w-2/3" /><Skeleton className="h-4 w-1/2" /></div>
+                      <Skeleton className="size-14 rounded-full" />
+                    </div>
+                    <Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" />
+                    <div className="flex gap-2 pt-2"><Skeleton className="h-8 w-32 rounded-full" /><Skeleton className="h-8 w-24 rounded-full" /></div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!searching && jobs.length === 0 && (
               <div className="glass-panel rounded-2xl p-12 text-center"><Briefcase className="size-10 text-muted-foreground mx-auto mb-3" /><p className="text-sm text-muted-foreground mb-4">Aucune offre. Élargis tes critères.</p><Button onClick={() => setStep(1)} variant="outline" size="sm">Modifier</Button></div>
             )}
-            {jobs.map((job) => (
+            {!searching && jobs.length > 0 && filteredJobs.length === 0 && (
+              <div className="glass-panel rounded-2xl p-8 text-center"><p className="text-sm text-muted-foreground mb-3">Aucune offre ne passe tes filtres.</p><Button onClick={() => { setMinScore(0); setHideAggregators(false); setSourceFilter("all"); }} variant="outline" size="sm">Réinitialiser les filtres</Button></div>
+            )}
+            {filteredJobs.map((job) => (
               <article key={job.url} className="glass-panel rounded-2xl p-5 sm:p-6">
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <div className="flex-1 min-w-0">

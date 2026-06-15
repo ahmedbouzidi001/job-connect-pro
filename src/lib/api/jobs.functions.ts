@@ -3,6 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-client-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { z } from "zod";
+import { enforceRateLimit, audit, logError } from "@/lib/api/rate-limit";
 
 const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-2.5-flash";
@@ -169,6 +170,7 @@ export const searchJobs = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => SearchInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    await enforceRateLimit(userId, "search_jobs", 10);
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -229,6 +231,7 @@ export const searchJobs = createServerFn({ method: "POST" })
     }
 
     if (rawJobs.length === 0) {
+      await audit({ userId, action: "search_jobs", metadata: { role: data.role, location: data.location, country: data.countryCode, results: 0, cached: fromCache } });
       return { query, jobs: [], message: "Aucune offre trouvée. Essayez avec des critères plus larges ou un autre pays." };
     }
 
@@ -236,7 +239,9 @@ export const searchJobs = createServerFn({ method: "POST" })
     const jobsForScoring = rawJobs.map((j, i) => ({ idx: i, title: j.title, company: j.company, source: j.source, excerpt: j.snippet.slice(0, 1500) }));
 
     // Fast model for batch scoring (much faster, cheaper). Falls back to MODEL if fails.
-    const ai = await aiCall({
+    let ai;
+    try {
+      ai = await aiCall({
       model: FAST_MODEL,
       messages: [
         { role: "system", content: `Expert recrutement. Réponds en ${langName}. Score multi-critères (skills, séniorité, localisation, secteur). Sois strict : score <50 si pas de vrai match.` },
@@ -274,7 +279,11 @@ export const searchJobs = createServerFn({ method: "POST" })
         },
       }],
       tool_choice: { type: "function", function: { name: "return_scored" } },
-    });
+      });
+    } catch (e) {
+      await logError({ userId, source: "search_jobs.ai", message: (e as Error).message });
+      throw e;
+    }
 
     const toolCall = ai.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) throw new Error("Réponse IA invalide");
@@ -285,6 +294,8 @@ export const searchJobs = createServerFn({ method: "POST" })
       if (!raw) return null;
       return { ...s, url: raw.url, source: raw.source, description: raw.snippet };
     }).filter(Boolean).sort((a: any, b: any) => b.score - a.score);
+
+    await audit({ userId, action: "search_jobs", metadata: { role: data.role, location: data.location, country: data.countryCode, results: enriched.length, cached: fromCache } });
 
     return { query, jobs: enriched, message: fromCache ? "Résultats instantanés (cache 24h)" : null, cached: fromCache };
   });
