@@ -139,6 +139,15 @@ function JobsPage() {
     finally { setSavingId(null); }
   };
 
+  const handleApplyDirect = async (job: ScoredJob) => {
+    // Open link first (must be in user gesture to avoid popup blocker)
+    window.open(job.url, "_blank", "noopener,noreferrer");
+    try {
+      await saveJob({ data: { title: job.title, company: job.company, location: job.location || null, url: job.url, description: job.description?.slice(0, 5000) || null, matchScore: job.score }});
+      toast.success("Lien ouvert + candidature suivie");
+    } catch (e) { toast.error((e as Error).message); }
+  };
+
   const handleGenerate = (job: ScoredJob, full?: FullOffer) => {
     sessionStorage.setItem("hireme:prefilled-job", JSON.stringify({
       jobTitle: full?.title || job.title, company: full?.company || job.company, jobUrl: job.url,
@@ -396,6 +405,7 @@ function JobsPage() {
                 {job.keywords.length > 0 && <div className="flex flex-wrap gap-1.5 mb-4">{job.keywords.map(k => <span key={k} className="text-xs px-2 py-0.5 rounded-full bg-foreground/5 border border-foreground/10">{k}</span>)}</div>}
                 <div className="flex flex-wrap gap-2 pt-3 border-t border-border/60">
                   <Button onClick={() => handleGenerate(job)} size="sm" className="rounded-full font-bold bg-[color:var(--hyper-cyan)] text-black hover:bg-[color:var(--hyper-cyan)]/90"><Wand2 className="size-3.5 mr-1.5" /> Générer CV + LM</Button>
+                  <Button onClick={() => handleApplyDirect(job)} size="sm" variant="outline" className="rounded-full font-bold border-[color:var(--hyper-lime)]/40"><Send className="size-3.5 mr-1.5" /> Postuler & suivre</Button>
                   {job.score >= 75 && (
                     <Button onClick={() => handleAutoDraft(job)} disabled={draftingId === job.url} size="sm" className="rounded-full font-bold bg-[color:var(--hyper-lime)] text-black hover:bg-[color:var(--hyper-lime)]/90">
                       {draftingId === job.url ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Zap className="size-3.5 mr-1.5" />}
