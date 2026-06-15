@@ -96,38 +96,23 @@ function normalizeJobUrl(url: string) {
 }
 
 function diversifyJobs(items: RawJob[], limit: number) {
+  // Round-robin across distinct sources to mix providers; no hard cap on any single source.
   const buckets = new Map<string, RawJob[]>();
   for (const item of items) {
-    const key = item.source.includes("linkedin") ? "linkedin" : item.source;
-    const bucket = buckets.get(key) ?? [];
-    bucket.push(item);
-    buckets.set(key, bucket);
+    const b = buckets.get(item.source) ?? [];
+    b.push(item);
+    buckets.set(item.source, b);
   }
-  const sourceCount = buckets.size;
-  // Cap LinkedIn at 25% so other sources are well-represented.
-  const linkedinCap = Math.max(5, Math.floor(limit * 0.25));
-  const otherSources = [...buckets.keys()].filter(k => k !== "linkedin");
-  // Round-robin across non-linkedin first, then add linkedin up to cap.
+  const keys = [...buckets.keys()];
   const mixed: RawJob[] = [];
-  let linkedinAdded = 0;
   let progress = true;
   while (mixed.length < limit && progress) {
     progress = false;
-    for (const src of otherSources) {
-      const b = buckets.get(src);
+    for (const k of keys) {
+      const b = buckets.get(k);
       if (b?.length) { mixed.push(b.shift()!); progress = true; if (mixed.length >= limit) break; }
     }
-    const lb = buckets.get("linkedin");
-    if (lb?.length && linkedinAdded < linkedinCap && mixed.length < limit) {
-      mixed.push(lb.shift()!); linkedinAdded++; progress = true;
-    }
   }
-  // Fill remaining with whatever is left (linkedin overflow)
-  if (mixed.length < limit) {
-    const lb = buckets.get("linkedin") ?? [];
-    while (lb.length && mixed.length < limit) mixed.push(lb.shift()!);
-  }
-  void sourceCount;
   return mixed;
 }
 
