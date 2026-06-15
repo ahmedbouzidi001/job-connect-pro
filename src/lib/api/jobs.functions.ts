@@ -306,11 +306,21 @@ export const searchJobs = createServerFn({ method: "POST" })
     const query = queries.join(" | ");
 
     if (!fromCache) {
-      const perQuery = Math.min(20, Math.max(10, Math.ceil(data.limit / 5)));
-      const results = await Promise.allSettled(queries.map(q => firecrawlSearch(q, perQuery, data.countryCode, data.language)));
+      const perQuery = Math.min(25, Math.max(15, Math.ceil(data.limit / 4)));
+      const [fcResults, apiJobs] = await Promise.all([
+        Promise.allSettled(queries.map(q => firecrawlSearch(q, perQuery, data.countryCode, data.language))),
+        fetchFreeApis({ role: data.role, location: data.location, keywords: data.keywords ?? null, workType: data.workType }),
+      ]);
       const seen = new Set<string>();
       const rawJobsPool: RawJob[] = [];
-      for (const r of results) {
+      // Free APIs first (high quality, structured data)
+      for (const j of apiJobs) {
+        const key = normalizeJobUrl(j.url);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        rawJobsPool.push(j);
+      }
+      for (const r of fcResults) {
         if (r.status !== "fulfilled") continue;
         for (const j of r.value) {
           const key = normalizeJobUrl(j.url);
@@ -344,7 +354,7 @@ export const searchJobs = createServerFn({ method: "POST" })
       ai = await aiCall({
       model: FAST_MODEL,
       messages: [
-        { role: "system", content: `Expert recrutement. Réponds en ${langName}. Score multi-critères (skills, séniorité, localisation, secteur). Sois strict : score <50 si pas de vrai match.` },
+        { role: "system", content: `Expert recrutement bienveillant. Réponds en ${langName}. Score chaque offre 0-100 selon adéquation skills/séniorité/localisation/secteur. Sois généreux : 40-60 = match partiel intéressant à explorer, 60-80 = bon match, 80+ = excellent match. Ne descends sous 30 que si totalement hors sujet.` },
         { role: "user", content: `PROFIL:\n"""\n${candidateContext}\n"""\n\nOFFRES (${jobsForScoring.length}):\n${jobsForScoring.map((j) => `[${j.idx}] ${j.title} @ ${j.company} (${j.source})\n${j.excerpt}\n---`).join("\n")}\n\nPour chaque offre: score 0-100, titre nettoyé, entreprise, localisation, résumé court, 2-4 raisons précises (skills/séniorité/contexte), mots-clés.` },
       ],
       tools: [{
