@@ -96,38 +96,23 @@ function normalizeJobUrl(url: string) {
 }
 
 function diversifyJobs(items: RawJob[], limit: number) {
+  // Round-robin across distinct sources to mix providers; no hard cap on any single source.
   const buckets = new Map<string, RawJob[]>();
   for (const item of items) {
-    const key = item.source.includes("linkedin") ? "linkedin" : item.source;
-    const bucket = buckets.get(key) ?? [];
-    bucket.push(item);
-    buckets.set(key, bucket);
+    const b = buckets.get(item.source) ?? [];
+    b.push(item);
+    buckets.set(item.source, b);
   }
-  const sourceCount = buckets.size;
-  // Cap LinkedIn at 25% so other sources are well-represented.
-  const linkedinCap = Math.max(5, Math.floor(limit * 0.25));
-  const otherSources = [...buckets.keys()].filter(k => k !== "linkedin");
-  // Round-robin across non-linkedin first, then add linkedin up to cap.
+  const keys = [...buckets.keys()];
   const mixed: RawJob[] = [];
-  let linkedinAdded = 0;
   let progress = true;
   while (mixed.length < limit && progress) {
     progress = false;
-    for (const src of otherSources) {
-      const b = buckets.get(src);
+    for (const k of keys) {
+      const b = buckets.get(k);
       if (b?.length) { mixed.push(b.shift()!); progress = true; if (mixed.length >= limit) break; }
     }
-    const lb = buckets.get("linkedin");
-    if (lb?.length && linkedinAdded < linkedinCap && mixed.length < limit) {
-      mixed.push(lb.shift()!); linkedinAdded++; progress = true;
-    }
   }
-  // Fill remaining with whatever is left (linkedin overflow)
-  if (mixed.length < limit) {
-    const lb = buckets.get("linkedin") ?? [];
-    while (lb.length && mixed.length < limit) mixed.push(lb.shift()!);
-  }
-  void sourceCount;
   return mixed;
 }
 
@@ -140,7 +125,7 @@ async function firecrawlSearch(query: string, limit: number, countryCode: string
       limit,
       country: countryCode === "ANY" ? undefined : countryCode,
       lang: language,
-      tbs: "qdr:m",
+      tbs: "qdr:y",
       scrapeOptions: { formats: ["markdown"], onlyMainContent: true },
     }),
   });
@@ -163,6 +148,106 @@ async function firecrawlSearch(query: string, limit: number, countryCode: string
       snippet: String(it.markdown || it.description || it.snippet || it.metadata?.description || "").slice(0, 4000),
     };
   }).filter((j) => j.url);
+}
+
+/* ---------- Free job APIs (no key required) ---------- */
+function matchesText(haystack: string, needles: string[]) {
+  const h = haystack.toLowerCase();
+  return needles.every(n => h.includes(n.toLowerCase()));
+}
+
+async function remotiveSearch(role: string, keywords: string | null): Promise<RawJob[]> {
+  try {
+    const q = encodeURIComponent([role, keywords].filter(Boolean).join(" ").slice(0, 80));
+    const res = await fetch(`https://remotive.com/api/remote-jobs?search=${q}&limit=30`, { headers: { Accept: "application/json" } });
+    if (!res.ok) return [];
+    const json = await res.json() as { jobs?: any[] };
+    return (json.jobs ?? []).slice(0, 30).map((j: any) => ({
+      title: String(j.title ?? "").slice(0, 200),
+      company: String(j.company_name ?? "").slice(0, 120),
+      location: j.candidate_required_location ?? "Remote",
+      url: String(j.url ?? ""),
+      source: "remotive.com",
+      snippet: String(j.description ?? "").replace(/<[^>]+>/g, " ").slice(0, 3500),
+    })).filter(j => j.url && j.title);
+  } catch { return []; }
+}
+
+async function remoteokSearch(role: string): Promise<RawJob[]> {
+  try {
+    const res = await fetch(`https://remoteok.com/api`, { headers: { "User-Agent": "HireMe/1.0", Accept: "application/json" } });
+    if (!res.ok) return [];
+    const json = await res.json() as any[];
+    const tokens = role.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+    return (json ?? []).filter((j: any) => j && j.position && j.url).filter((j: any) => {
+      const t = `${j.position} ${j.tags?.join(" ") ?? ""}`.toLowerCase();
+      return tokens.some(tok => t.includes(tok));
+    }).slice(0, 25).map((j: any) => ({
+      title: String(j.position).slice(0, 200),
+      company: String(j.company ?? "").slice(0, 120),
+      location: j.location ?? "Remote",
+      url: String(j.url),
+      source: "remoteok.com",
+      snippet: String(j.description ?? "").replace(/<[^>]+>/g, " ").slice(0, 3500),
+    }));
+  } catch { return []; }
+}
+
+async function arbeitnowSearch(role: string, location: string): Promise<RawJob[]> {
+  try {
+    const res = await fetch(`https://www.arbeitnow.com/api/job-board-api`, { headers: { Accept: "application/json" } });
+    if (!res.ok) return [];
+    const json = await res.json() as { data?: any[] };
+    const tokens = [role.toLowerCase()];
+    if (location) tokens.push(location.toLowerCase());
+    return (json.data ?? []).filter((j: any) => {
+      const t = `${j.title ?? ""} ${j.location ?? ""} ${(j.tags ?? []).join(" ")}`.toLowerCase();
+      return matchesText(t, [role.toLowerCase()]) || tokens.some(tok => t.includes(tok));
+    }).slice(0, 25).map((j: any) => ({
+      title: String(j.title ?? "").slice(0, 200),
+      company: String(j.company_name ?? "").slice(0, 120),
+      location: j.location ?? null,
+      url: String(j.url ?? ""),
+      source: "arbeitnow.com",
+      snippet: String(j.description ?? "").replace(/<[^>]+>/g, " ").slice(0, 3500),
+    })).filter((j: RawJob) => j.url);
+  } catch { return []; }
+}
+
+async function museSearch(role: string, location: string): Promise<RawJob[]> {
+  try {
+    const params = new URLSearchParams({ page: "0" });
+    if (location) params.append("location", location);
+    const res = await fetch(`https://www.themuse.com/api/public/jobs?${params}`, { headers: { Accept: "application/json" } });
+    if (!res.ok) return [];
+    const json = await res.json() as { results?: any[] };
+    const tokens = role.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+    return (json.results ?? []).filter((j: any) => {
+      const t = `${j.name ?? ""} ${j.categories?.map((c: any) => c.name).join(" ") ?? ""}`.toLowerCase();
+      return tokens.some(tok => t.includes(tok));
+    }).slice(0, 20).map((j: any) => ({
+      title: String(j.name ?? "").slice(0, 200),
+      company: String(j.company?.name ?? "").slice(0, 120),
+      location: j.locations?.map((l: any) => l.name).join(", ") ?? null,
+      url: String(j.refs?.landing_page ?? ""),
+      source: "themuse.com",
+      snippet: String(j.contents ?? "").replace(/<[^>]+>/g, " ").slice(0, 3500),
+    })).filter((j: RawJob) => j.url);
+  } catch { return []; }
+}
+
+async function fetchFreeApis(p: { role: string; location: string; keywords: string | null; workType: string }): Promise<RawJob[]> {
+  const includeRemote = p.workType === "remote" || p.workType === "any";
+  const tasks: Promise<RawJob[]>[] = [
+    arbeitnowSearch(p.role, p.location),
+    museSearch(p.role, p.location),
+  ];
+  if (includeRemote) {
+    tasks.push(remotiveSearch(p.role, p.keywords));
+    tasks.push(remoteokSearch(p.role));
+  }
+  const out = await Promise.allSettled(tasks);
+  return out.flatMap(r => r.status === "fulfilled" ? r.value : []);
 }
 
 export const searchJobs = createServerFn({ method: "POST" })
@@ -206,11 +291,21 @@ export const searchJobs = createServerFn({ method: "POST" })
     const query = queries.join(" | ");
 
     if (!fromCache) {
-      const perQuery = Math.min(20, Math.max(10, Math.ceil(data.limit / 5)));
-      const results = await Promise.allSettled(queries.map(q => firecrawlSearch(q, perQuery, data.countryCode, data.language)));
+      const perQuery = Math.min(25, Math.max(15, Math.ceil(data.limit / 4)));
+      const [fcResults, apiJobs] = await Promise.all([
+        Promise.allSettled(queries.map(q => firecrawlSearch(q, perQuery, data.countryCode, data.language))),
+        fetchFreeApis({ role: data.role, location: data.location, keywords: data.keywords ?? null, workType: data.workType }),
+      ]);
       const seen = new Set<string>();
       const rawJobsPool: RawJob[] = [];
-      for (const r of results) {
+      // Free APIs first (high quality, structured data)
+      for (const j of apiJobs) {
+        const key = normalizeJobUrl(j.url);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        rawJobsPool.push(j);
+      }
+      for (const r of fcResults) {
         if (r.status !== "fulfilled") continue;
         for (const j of r.value) {
           const key = normalizeJobUrl(j.url);
@@ -244,7 +339,7 @@ export const searchJobs = createServerFn({ method: "POST" })
       ai = await aiCall({
       model: FAST_MODEL,
       messages: [
-        { role: "system", content: `Expert recrutement. Réponds en ${langName}. Score multi-critères (skills, séniorité, localisation, secteur). Sois strict : score <50 si pas de vrai match.` },
+        { role: "system", content: `Expert recrutement bienveillant. Réponds en ${langName}. Score chaque offre 0-100 selon adéquation skills/séniorité/localisation/secteur. Sois généreux : 40-60 = match partiel intéressant à explorer, 60-80 = bon match, 80+ = excellent match. Ne descends sous 30 que si totalement hors sujet.` },
         { role: "user", content: `PROFIL:\n"""\n${candidateContext}\n"""\n\nOFFRES (${jobsForScoring.length}):\n${jobsForScoring.map((j) => `[${j.idx}] ${j.title} @ ${j.company} (${j.source})\n${j.excerpt}\n---`).join("\n")}\n\nPour chaque offre: score 0-100, titre nettoyé, entreprise, localisation, résumé court, 2-4 raisons précises (skills/séniorité/contexte), mots-clés.` },
       ],
       tools: [{
