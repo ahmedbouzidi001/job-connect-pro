@@ -53,8 +53,8 @@ const COUNTRY_SOURCES: Record<string, string[]> = {
 
 const SearchInput = z.object({
   role: z.string().min(2).max(120),
-  location: z.string().min(2).max(120),
-  countryCode: z.string().length(2).default("TN"),
+  location: z.preprocess((v) => typeof v === "string" ? v.trim() : "", z.string().max(120)).default(""),
+  countryCode: z.enum(["TN", "FR", "MA", "DZ", "CA", "BE", "CH", "AE", "SA", "QA", "US", "UK", "DE", "ANY"]).default("TN"),
   workType: z.enum(["any", "remote", "hybrid", "onsite"]).default("any"),
   contract: z.enum(["any", "full_time", "part_time", "contract", "internship"]).default("any"),
   seniority: z.enum(["any", "junior", "mid", "senior", "lead"]).default("any"),
@@ -67,8 +67,23 @@ const SearchInput = z.object({
 
 type RawJob = { title: string; company: string; location?: string; url: string; source: string; snippet: string };
 
+const COUNTRY_TERMS: Record<string, string[]> = {
+  TN: ["Tunisia", "Tunisie", "Tunis"], FR: ["France", "Paris"], MA: ["Morocco", "Maroc", "Casablanca"], DZ: ["Algeria", "Algérie", "Algiers"],
+  CA: ["Canada"], BE: ["Belgium", "Belgique", "Brussels"], CH: ["Switzerland", "Suisse", "Geneva"], AE: ["UAE", "Dubai", "Abu Dhabi"],
+  SA: ["Saudi Arabia", "Riyadh", "Jeddah"], QA: ["Qatar", "Doha"], US: ["United States", "USA"], UK: ["United Kingdom", "UK", "London"],
+  DE: ["Germany", "Deutschland", "Berlin"], ANY: [],
+};
+
+function effectiveLocation(p: { location?: string | null; countryCode: string }) {
+  const typed = (p.location ?? "").trim();
+  return typed || (COUNTRY_TERMS[p.countryCode]?.[0] ?? "");
+}
+
 function buildQueries(p: z.infer<typeof SearchInput>): string[] {
-  const base: string[] = [`"${p.role}"`, p.location];
+  const loc = effectiveLocation(p);
+  const countryTerms = COUNTRY_TERMS[p.countryCode] ?? [];
+  const base: string[] = [`"${p.role}"`];
+  if (loc) base.push(loc);
   if (p.workType === "remote") base.push("remote OR télétravail");
   if (p.workType === "hybrid") base.push("hybride");
   if (p.contract === "internship") base.push("stage OR internship OR alternance");
@@ -80,6 +95,7 @@ function buildQueries(p: z.infer<typeof SearchInput>): string[] {
   const baseQuery = `${base.join(" ")} ${intent}`;
   return [
     ...sources.map((source) => `${baseQuery} ${source}`),
+    ...(countryTerms.length ? countryTerms.map((term) => `"${p.role}" ${term} ${intent}`) : []),
     `${base.join(" ")} ${p.role} ${intent}`,
   ];
 }
