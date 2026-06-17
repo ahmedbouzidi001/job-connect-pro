@@ -322,12 +322,17 @@ export const searchJobs = createServerFn({ method: "POST" })
         fetchFreeApis({ role: data.role, location: data.location, keywords: data.keywords ?? null, workType: data.workType }),
       ]);
       const seen = new Set<string>();
+      const seenTitleCompany = new Set<string>();
       const rawJobsPool: RawJob[] = [];
+      const fingerprint = (j: RawJob) => `${j.title.toLowerCase().replace(/\s+/g, " ").trim()}|${j.company.toLowerCase().replace(/\s+/g, " ").trim()}`;
       // Free APIs first (high quality, structured data)
       for (const j of apiJobs) {
         const key = normalizeJobUrl(j.url);
         if (seen.has(key)) continue;
+        const fp = fingerprint(j);
+        if (seenTitleCompany.has(fp)) continue;
         seen.add(key);
+        seenTitleCompany.add(fp);
         rawJobsPool.push(j);
       }
       for (const r of fcResults) {
@@ -335,7 +340,10 @@ export const searchJobs = createServerFn({ method: "POST" })
         for (const j of r.value) {
           const key = normalizeJobUrl(j.url);
           if (seen.has(key)) continue;
+          const fp = fingerprint(j);
+          if (seenTitleCompany.has(fp)) continue;
           seen.add(key);
+          seenTitleCompany.add(fp);
           rawJobsPool.push(j);
         }
       }
@@ -402,7 +410,21 @@ export const searchJobs = createServerFn({ method: "POST" })
       });
     } catch (e) {
       await logError({ userId, source: "search_jobs.ai", message: (e as Error).message });
-      throw e;
+      // Graceful fallback: return raw jobs unscored so the user still sees something.
+      const fallback = rawJobs.slice(0, data.limit).map((raw) => ({
+        score: 50,
+        title: raw.title,
+        company: raw.company,
+        location: raw.location ?? "—",
+        summary: raw.snippet.slice(0, 280),
+        match_reasons: ["Scoring IA indisponible — résultats bruts affichés"],
+        keywords: [],
+        url: raw.url,
+        source: raw.source,
+        description: raw.snippet,
+      }));
+      await audit({ userId, action: "search_jobs", metadata: { role: data.role, location: data.location, country: data.countryCode, results: fallback.length, cached: fromCache, ai_failed: true } });
+      return { query, jobs: fallback, message: "Scoring IA indisponible — résultats bruts affichés.", cached: fromCache };
     }
 
     const toolCall = ai.choices?.[0]?.message?.tool_calls?.[0];
