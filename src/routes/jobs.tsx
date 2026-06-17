@@ -122,10 +122,13 @@ function JobsPage() {
     setSearching(true); setJobs([]);
     try { localStorage.setItem("hireme:last-search", JSON.stringify({ role, location, countryCode, workType, contract, seniority, keywords })); } catch {}
     try {
-      const res = await search({ data: { role: role.trim(), location: location.trim(), countryCode, workType, contract, seniority, salaryMin: null, salaryCurrency: "EUR" as const, language: "fr" as const, keywords: keywords.trim() || null, limit: 100 }}) as { jobs: ScoredJob[]; message: string | null };
-      setJobs(res.jobs); setStep(3);
+      const res = await search({ data: { role: role.trim(), location: location.trim(), countryCode, workType, contract, seniority, salaryMin: null, salaryCurrency: "EUR" as const, language: "fr" as const, keywords: keywords.trim() || null, limit: 100 }}) as { jobs?: ScoredJob[]; message?: string | null } | undefined;
+      const list = Array.isArray(res?.jobs) ? res!.jobs! : [];
+      setJobs(list); setStep(3);
       if (user) await supabase.from("profiles").update({ preferred_country: countryCode }).eq("user_id", user.id);
-      if (res.message) toast.info(res.message); else toast.success(`${res.jobs.length} offres scorées`);
+      if (res?.message) toast.info(res.message);
+      else if (list.length === 0) toast.warning("Aucune offre — élargis la zone (ex: 'Qatar' au lieu de 'Doha') ou retire les mots-clés.");
+      else toast.success(`${list.length} offres scorées`);
     } catch (e) { toast.error((e as Error).message); }
     finally { setSearching(false); }
   };

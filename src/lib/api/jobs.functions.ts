@@ -437,6 +437,25 @@ export const searchJobs = createServerFn({ method: "POST" })
       return { ...s, url: raw.url, source: raw.source, description: raw.snippet };
     }).filter(Boolean).sort((a: any, b: any) => b.score - a.score);
 
+    // If AI filtered everything out but we DO have raw jobs, surface them unscored
+    // rather than returning an empty list to the user.
+    if (enriched.length === 0 && rawJobs.length > 0) {
+      const fallback = rawJobs.slice(0, data.limit).map((raw) => ({
+        score: 45,
+        title: raw.title,
+        company: raw.company,
+        location: raw.location ?? "—",
+        summary: raw.snippet.slice(0, 280),
+        match_reasons: ["Résultats bruts (scoring IA n'a rien retenu)"],
+        keywords: [],
+        url: raw.url,
+        source: raw.source,
+        description: raw.snippet,
+      }));
+      await audit({ userId, action: "search_jobs", metadata: { role: data.role, location: data.location, country: data.countryCode, results: fallback.length, cached: fromCache, ai_empty: true } });
+      return { query, jobs: fallback, message: `${fallback.length} offres trouvées (scoring désactivé — IA n'a rien retenu).`, cached: fromCache };
+    }
+
     await audit({ userId, action: "search_jobs", metadata: { role: data.role, location: data.location, country: data.countryCode, results: enriched.length, cached: fromCache } });
 
     return { query, jobs: enriched, message: fromCache ? "Résultats instantanés (cache 24h)" : null, cached: fromCache };
