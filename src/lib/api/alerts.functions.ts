@@ -5,8 +5,8 @@ import { z } from "zod";
 
 const AlertInput = z.object({
   role: z.string().min(2).max(120),
-  location: z.string().min(2).max(120),
-  countryCode: z.string().length(2).default("TN"),
+  location: z.preprocess((v) => typeof v === "string" ? v.trim() : "", z.string().max(120)).default(""),
+  countryCode: z.enum(["TN", "FR", "MA", "DZ", "CA", "BE", "CH", "AE", "SA", "QA", "US", "UK", "DE", "ANY"]).default("TN"),
   keywords: z.string().max(500).optional().nullable(),
   workType: z.enum(["any", "remote", "hybrid", "onsite"]).default("any"),
   contract: z.enum(["any", "full_time", "part_time", "contract", "internship"]).default("any"),
@@ -19,9 +19,10 @@ export const createAlert = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => AlertInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const location = data.location || data.countryCode;
     const { data: row, error } = await supabase.from("job_alerts").insert({
       user_id: userId,
-      role: data.role, location: data.location, country_code: data.countryCode,
+      role: data.role, location, country_code: data.countryCode,
       keywords: data.keywords ?? null,
       work_type: data.workType, contract: data.contract, seniority: data.seniority,
       min_score: data.minScore,

@@ -118,7 +118,7 @@ function JobsPage() {
   };
 
   const handleSearch = async () => {
-    if (!role.trim() || !location.trim()) { toast.error("Indique le poste et le lieu"); return; }
+    if (!role.trim()) { toast.error("Indique le poste recherché"); return; }
     setSearching(true); setJobs([]);
     try { localStorage.setItem("hireme:last-search", JSON.stringify({ role, location, countryCode, workType, contract, seniority, keywords })); } catch {}
     try {
@@ -127,7 +127,7 @@ function JobsPage() {
       setJobs(list); setStep(3);
       if (user) await supabase.from("profiles").update({ preferred_country: countryCode }).eq("user_id", user.id);
       if (res?.message) toast.info(res.message);
-      else if (list.length === 0) toast.warning("Aucune offre — élargis la zone (ex: 'Qatar' au lieu de 'Doha') ou retire les mots-clés.");
+      else if (list.length === 0) toast.warning("Aucune offre trouvée pour ce poste. Essaie un intitulé plus large, ex: Engineer, Mechanical Engineer, Civil Engineer.");
       else toast.success(`${list.length} offres scorées`);
     } catch (e) { toast.error((e as Error).message); }
     finally { setSearching(false); }
@@ -160,7 +160,7 @@ function JobsPage() {
   };
 
   const handleCreateAlert = async () => {
-    if (!role.trim() || !location.trim()) { toast.error("Définis d'abord poste et lieu"); return; }
+    if (!role.trim()) { toast.error("Définis d'abord le poste recherché"); return; }
     setCreatingAlert(true);
     try {
       await createAlertFn({ data: { role: role.trim(), location: location.trim(), countryCode, keywords: keywords.trim() || null, workType, contract, seniority, minScore: 70 }});
@@ -289,7 +289,7 @@ function JobsPage() {
                   <SelectContent>{COUNTRIES.map(c => <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div><Label className="mb-2 block text-xs font-bold uppercase">Ville / Région *</Label><Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Ex: Tunis, Paris, Casablanca" /></div>
+              <div><Label className="mb-2 block text-xs font-bold uppercase">Ville / Région</Label><Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Optionnel — ex: Doha, Tunis, Paris" /></div>
               <div className="sm:col-span-2"><Label className="mb-2 block text-xs font-bold uppercase">Poste *</Label><Input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Ex: Développeur Full-Stack" /></div>
               <div><Label className="mb-2 block text-xs font-bold uppercase">Mode</Label>
                 <Select value={workType} onValueChange={(v) => setWorkType(v as typeof workType)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="any">Tous</SelectItem><SelectItem value="remote">Remote</SelectItem><SelectItem value="hybrid">Hybride</SelectItem><SelectItem value="onsite">Sur site</SelectItem></SelectContent></Select>
@@ -298,7 +298,7 @@ function JobsPage() {
                 <Select value={contract} onValueChange={(v) => setContract(v as typeof contract)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="any">Tous</SelectItem><SelectItem value="full_time">CDI</SelectItem><SelectItem value="contract">Freelance</SelectItem><SelectItem value="internship">Stage</SelectItem></SelectContent></Select>
               </div>
             </div>
-            <div className="flex justify-end"><Button onClick={() => setStep(2)} disabled={!role.trim() || !location.trim()} className="rounded-full font-bold">Suivant <ArrowRight className="size-4 ml-1.5" /></Button></div>
+            <div className="flex justify-end"><Button onClick={() => setStep(2)} disabled={!role.trim()} className="rounded-full font-bold">Suivant <ArrowRight className="size-4 ml-1.5" /></Button></div>
           </div>
         )}
 

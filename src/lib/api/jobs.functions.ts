@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-client-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { z } from "zod";
 import { enforceRateLimit, audit, logError } from "@/lib/api/rate-limit";
 
@@ -53,8 +52,8 @@ const COUNTRY_SOURCES: Record<string, string[]> = {
 
 const SearchInput = z.object({
   role: z.string().min(2).max(120),
-  location: z.string().min(2).max(120),
-  countryCode: z.string().length(2).default("TN"),
+  location: z.preprocess((v) => typeof v === "string" ? v.trim() : "", z.string().max(120)).default(""),
+  countryCode: z.enum(["TN", "FR", "MA", "DZ", "CA", "BE", "CH", "AE", "SA", "QA", "US", "UK", "DE", "ANY"]).default("TN"),
   workType: z.enum(["any", "remote", "hybrid", "onsite"]).default("any"),
   contract: z.enum(["any", "full_time", "part_time", "contract", "internship"]).default("any"),
   seniority: z.enum(["any", "junior", "mid", "senior", "lead"]).default("any"),
@@ -67,8 +66,23 @@ const SearchInput = z.object({
 
 type RawJob = { title: string; company: string; location?: string; url: string; source: string; snippet: string };
 
+const COUNTRY_TERMS: Record<string, string[]> = {
+  TN: ["Tunisia", "Tunisie", "Tunis"], FR: ["France", "Paris"], MA: ["Morocco", "Maroc", "Casablanca"], DZ: ["Algeria", "Algérie", "Algiers"],
+  CA: ["Canada"], BE: ["Belgium", "Belgique", "Brussels"], CH: ["Switzerland", "Suisse", "Geneva"], AE: ["UAE", "Dubai", "Abu Dhabi"],
+  SA: ["Saudi Arabia", "Riyadh", "Jeddah"], QA: ["Qatar", "Doha"], US: ["United States", "USA"], UK: ["United Kingdom", "UK", "London"],
+  DE: ["Germany", "Deutschland", "Berlin"], ANY: [],
+};
+
+function effectiveLocation(p: { location?: string | null; countryCode: string }) {
+  const typed = (p.location ?? "").trim();
+  return typed || (COUNTRY_TERMS[p.countryCode]?.[0] ?? "");
+}
+
 function buildQueries(p: z.infer<typeof SearchInput>): string[] {
-  const base: string[] = [`"${p.role}"`, p.location];
+  const loc = effectiveLocation(p);
+  const countryTerms = COUNTRY_TERMS[p.countryCode] ?? [];
+  const base: string[] = [`"${p.role}"`];
+  if (loc) base.push(loc);
   if (p.workType === "remote") base.push("remote OR télétravail");
   if (p.workType === "hybrid") base.push("hybride");
   if (p.contract === "internship") base.push("stage OR internship OR alternance");
@@ -80,6 +94,7 @@ function buildQueries(p: z.infer<typeof SearchInput>): string[] {
   const baseQuery = `${base.join(" ")} ${intent}`;
   return [
     ...sources.map((source) => `${baseQuery} ${source}`),
+    ...(countryTerms.length ? countryTerms.map((term) => `"${p.role}" ${term} ${intent}`) : []),
     `${base.join(" ")} ${p.role} ${intent}`,
   ];
 }
@@ -154,6 +169,42 @@ async function firecrawlSearch(query: string, limit: number, countryCode: string
 function matchesText(haystack: string, needles: string[]) {
   const h = haystack.toLowerCase();
   return needles.every(n => h.includes(n.toLowerCase()));
+}
+
+function stripHtml(value: string) {
+  return value.replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, " ").trim();
+}
+
+function extractBetween(source: string, pattern: RegExp) {
+  const match = source.match(pattern);
+  return match ? stripHtml(match[1]) : "";
+}
+
+async function linkedinPublicSearch(role: string, location: string): Promise<RawJob[]> {
+  try {
+    const params = new URLSearchParams({ keywords: role, location: location || "Qatar", start: "0" });
+    const res = await fetch(`https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?${params}`, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; HireMeBot/1.0)", Accept: "text/html" },
+    });
+    if (!res.ok) return [];
+    const html = await res.text();
+    const cards = html.match(/<li>[\s\S]*?<\/li>/g) ?? [];
+    return cards.map((card) => {
+      const url = extractBetween(card, /href="([^"]+)"/);
+      const title = extractBetween(card, /<h3[^>]*>([\s\S]*?)<\/h3>/);
+      const company = extractBetween(card, /<h4[^>]*>([\s\S]*?)<\/h4>/);
+      const jobLocation = extractBetween(card, /class="[^"]*job-search-card__location[^"]*"[^>]*>([\s\S]*?)<\/span>/);
+      const date = extractBetween(card, /<time[^>]*>([\s\S]*?)<\/time>/);
+      return {
+        title: title.slice(0, 200),
+        company: company.slice(0, 120),
+        location: jobLocation || location || "—",
+        url: url.replace(/&amp;/g, "&"),
+        source: "linkedin.com",
+        snippet: [title, company, jobLocation, date].filter(Boolean).join(" · "),
+      };
+    }).filter((j) => j.url && j.title);
+  } catch { return []; }
 }
 
 async function remotiveSearch(role: string, keywords: string | null): Promise<RawJob[]> {
@@ -260,16 +311,18 @@ async function jobicySearch(role: string, location: string): Promise<RawJob[]> {
   } catch { return []; }
 }
 
-async function fetchFreeApis(p: { role: string; location: string; keywords: string | null; workType: string }): Promise<RawJob[]> {
+async function fetchFreeApis(p: { role: string; location: string; countryCode: string; keywords: string | null; workType: string }): Promise<RawJob[]> {
   const includeRemote = p.workType === "remote" || p.workType === "any";
+  const loc = effectiveLocation(p);
   const tasks: Promise<RawJob[]>[] = [
-    arbeitnowSearch(p.role, p.location),
-    museSearch(p.role, p.location),
+    linkedinPublicSearch(p.role, loc),
+    arbeitnowSearch(p.role, loc),
+    museSearch(p.role, loc),
   ];
   if (includeRemote) {
     tasks.push(remotiveSearch(p.role, p.keywords));
     tasks.push(remoteokSearch(p.role));
-    tasks.push(jobicySearch(p.role, p.location));
+    tasks.push(jobicySearch(p.role, loc));
   }
   const out = await Promise.allSettled(tasks);
   return out.flatMap(r => r.status === "fulfilled" ? r.value : []);
@@ -300,6 +353,7 @@ export const searchJobs = createServerFn({ method: "POST" })
 
     let rawJobs: RawJob[] = [];
     let fromCache = false;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: cached } = await supabaseAdmin
       .from("job_search_cache")
       .select("raw_jobs, expires_at")
@@ -319,7 +373,7 @@ export const searchJobs = createServerFn({ method: "POST" })
       const perQuery = Math.min(25, Math.max(15, Math.ceil(data.limit / 4)));
       const [fcResults, apiJobs] = await Promise.all([
         Promise.allSettled(queries.map(q => firecrawlSearch(q, perQuery, data.countryCode, data.language))),
-        fetchFreeApis({ role: data.role, location: data.location, keywords: data.keywords ?? null, workType: data.workType }),
+        fetchFreeApis({ role: data.role, location: data.location, countryCode: data.countryCode, keywords: data.keywords ?? null, workType: data.workType }),
       ]);
       const seen = new Set<string>();
       const seenTitleCompany = new Set<string>();
