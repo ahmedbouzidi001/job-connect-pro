@@ -6,7 +6,7 @@ import { z } from "zod";
 const AlertInput = z.object({
   role: z.string().min(2).max(120),
   location: z.preprocess((v) => typeof v === "string" ? v.trim() : "", z.string().max(120)).default(""),
-  countryCode: z.string().length(2).default("TN"),
+  countryCode: z.enum(["TN", "FR", "MA", "DZ", "CA", "BE", "CH", "AE", "SA", "QA", "US", "UK", "DE", "ANY"]).default("TN"),
   keywords: z.string().max(500).optional().nullable(),
   workType: z.enum(["any", "remote", "hybrid", "onsite"]).default("any"),
   contract: z.enum(["any", "full_time", "part_time", "contract", "internship"]).default("any"),
