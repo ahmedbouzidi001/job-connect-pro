@@ -172,6 +172,42 @@ function matchesText(haystack: string, needles: string[]) {
   return needles.every(n => h.includes(n.toLowerCase()));
 }
 
+function stripHtml(value: string) {
+  return value.replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, " ").trim();
+}
+
+function extractBetween(source: string, pattern: RegExp) {
+  const match = source.match(pattern);
+  return match ? stripHtml(match[1]) : "";
+}
+
+async function linkedinPublicSearch(role: string, location: string): Promise<RawJob[]> {
+  try {
+    const params = new URLSearchParams({ keywords: role, location: location || "Qatar", start: "0" });
+    const res = await fetch(`https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?${params}`, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; HireMeBot/1.0)", Accept: "text/html" },
+    });
+    if (!res.ok) return [];
+    const html = await res.text();
+    const cards = html.match(/<li>[\s\S]*?<\/li>/g) ?? [];
+    return cards.map((card) => {
+      const url = extractBetween(card, /href="([^"]+)"/);
+      const title = extractBetween(card, /<h3[^>]*>([\s\S]*?)<\/h3>/);
+      const company = extractBetween(card, /<h4[^>]*>([\s\S]*?)<\/h4>/);
+      const jobLocation = extractBetween(card, /class="[^"]*job-search-card__location[^"]*"[^>]*>([\s\S]*?)<\/span>/);
+      const date = extractBetween(card, /<time[^>]*>([\s\S]*?)<\/time>/);
+      return {
+        title: title.slice(0, 200),
+        company: company.slice(0, 120),
+        location: jobLocation || location || "—",
+        url: url.replace(/&amp;/g, "&"),
+        source: "linkedin.com",
+        snippet: [title, company, jobLocation, date].filter(Boolean).join(" · "),
+      };
+    }).filter((j) => j.url && j.title);
+  } catch { return []; }
+}
+
 async function remotiveSearch(role: string, keywords: string | null): Promise<RawJob[]> {
   try {
     const q = encodeURIComponent([role, keywords].filter(Boolean).join(" ").slice(0, 80));
