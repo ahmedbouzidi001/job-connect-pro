@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-client-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { z } from "zod";
 import { enforceRateLimit, audit, logError } from "@/lib/api/rate-limit";
 
@@ -354,6 +353,7 @@ export const searchJobs = createServerFn({ method: "POST" })
 
     let rawJobs: RawJob[] = [];
     let fromCache = false;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: cached } = await supabaseAdmin
       .from("job_search_cache")
       .select("raw_jobs, expires_at")
