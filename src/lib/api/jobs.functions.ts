@@ -312,16 +312,18 @@ async function jobicySearch(role: string, location: string): Promise<RawJob[]> {
   } catch { return []; }
 }
 
-async function fetchFreeApis(p: { role: string; location: string; keywords: string | null; workType: string }): Promise<RawJob[]> {
+async function fetchFreeApis(p: { role: string; location: string; countryCode: string; keywords: string | null; workType: string }): Promise<RawJob[]> {
   const includeRemote = p.workType === "remote" || p.workType === "any";
+  const loc = effectiveLocation(p);
   const tasks: Promise<RawJob[]>[] = [
-    arbeitnowSearch(p.role, p.location),
-    museSearch(p.role, p.location),
+    linkedinPublicSearch(p.role, loc),
+    arbeitnowSearch(p.role, loc),
+    museSearch(p.role, loc),
   ];
   if (includeRemote) {
     tasks.push(remotiveSearch(p.role, p.keywords));
     tasks.push(remoteokSearch(p.role));
-    tasks.push(jobicySearch(p.role, p.location));
+    tasks.push(jobicySearch(p.role, loc));
   }
   const out = await Promise.allSettled(tasks);
   return out.flatMap(r => r.status === "fulfilled" ? r.value : []);
@@ -371,7 +373,7 @@ export const searchJobs = createServerFn({ method: "POST" })
       const perQuery = Math.min(25, Math.max(15, Math.ceil(data.limit / 4)));
       const [fcResults, apiJobs] = await Promise.all([
         Promise.allSettled(queries.map(q => firecrawlSearch(q, perQuery, data.countryCode, data.language))),
-        fetchFreeApis({ role: data.role, location: data.location, keywords: data.keywords ?? null, workType: data.workType }),
+        fetchFreeApis({ role: data.role, location: data.location, countryCode: data.countryCode, keywords: data.keywords ?? null, workType: data.workType }),
       ]);
       const seen = new Set<string>();
       const seenTitleCompany = new Set<string>();
