@@ -236,6 +236,30 @@ async function museSearch(role: string, location: string): Promise<RawJob[]> {
   } catch { return []; }
 }
 
+async function jobicySearch(role: string, location: string): Promise<RawJob[]> {
+  try {
+    const params = new URLSearchParams({ count: "50" });
+    if (role) params.append("tag", role.slice(0, 40));
+    if (location) params.append("geo", location.slice(0, 40));
+    const res = await fetch(`https://jobicy.com/api/v2/remote-jobs?${params}`, { headers: { Accept: "application/json" } });
+    if (!res.ok) return [];
+    const json = await res.json() as { jobs?: any[] };
+    const tokens = role.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+    return (json.jobs ?? []).filter((j: any) => {
+      if (!j?.url || !j?.jobTitle) return false;
+      const t = `${j.jobTitle} ${(j.jobIndustry ?? []).join(" ")} ${(j.jobType ?? []).join(" ")}`.toLowerCase();
+      return tokens.length === 0 || tokens.some(tok => t.includes(tok));
+    }).slice(0, 25).map((j: any) => ({
+      title: String(j.jobTitle).slice(0, 200),
+      company: String(j.companyName ?? "").slice(0, 120),
+      location: j.jobGeo ?? "Remote",
+      url: String(j.url),
+      source: "jobicy.com",
+      snippet: String(j.jobDescription ?? j.jobExcerpt ?? "").replace(/<[^>]+>/g, " ").slice(0, 3500),
+    }));
+  } catch { return []; }
+}
+
 async function fetchFreeApis(p: { role: string; location: string; keywords: string | null; workType: string }): Promise<RawJob[]> {
   const includeRemote = p.workType === "remote" || p.workType === "any";
   const tasks: Promise<RawJob[]>[] = [
@@ -245,6 +269,7 @@ async function fetchFreeApis(p: { role: string; location: string; keywords: stri
   if (includeRemote) {
     tasks.push(remotiveSearch(p.role, p.keywords));
     tasks.push(remoteokSearch(p.role));
+    tasks.push(jobicySearch(p.role, p.location));
   }
   const out = await Promise.allSettled(tasks);
   return out.flatMap(r => r.status === "fulfilled" ? r.value : []);
