@@ -17,6 +17,7 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as LinkedinRouteImport } from './routes/linkedin'
+import { Route as LegalRouteImport } from './routes/legal'
 import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as GeneratorRouteImport } from './routes/generator'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -65,6 +66,11 @@ const MessagesRoute = MessagesRouteImport.update({
 const LinkedinRoute = LinkedinRouteImport.update({
   id: '/linkedin',
   path: '/linkedin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalRoute = LegalRouteImport.update({
+  id: '/legal',
+  path: '/legal',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JobsRoute = JobsRouteImport.update({
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/generator': typeof GeneratorRoute
   '/jobs': typeof JobsRoute
+  '/legal': typeof LegalRoute
   '/linkedin': typeof LinkedinRoute
   '/messages': typeof MessagesRoute
   '/pricing': typeof PricingRoute
@@ -140,6 +147,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/generator': typeof GeneratorRoute
   '/jobs': typeof JobsRoute
+  '/legal': typeof LegalRoute
   '/linkedin': typeof LinkedinRoute
   '/messages': typeof MessagesRoute
   '/pricing': typeof PricingRoute
@@ -160,6 +168,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/generator': typeof GeneratorRoute
   '/jobs': typeof JobsRoute
+  '/legal': typeof LegalRoute
   '/linkedin': typeof LinkedinRoute
   '/messages': typeof MessagesRoute
   '/pricing': typeof PricingRoute
@@ -181,6 +190,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/generator'
     | '/jobs'
+    | '/legal'
     | '/linkedin'
     | '/messages'
     | '/pricing'
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/generator'
     | '/jobs'
+    | '/legal'
     | '/linkedin'
     | '/messages'
     | '/pricing'
@@ -219,6 +230,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/generator'
     | '/jobs'
+    | '/legal'
     | '/linkedin'
     | '/messages'
     | '/pricing'
@@ -239,6 +251,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   GeneratorRoute: typeof GeneratorRoute
   JobsRoute: typeof JobsRoute
+  LegalRoute: typeof LegalRoute
   LinkedinRoute: typeof LinkedinRoute
   MessagesRoute: typeof MessagesRoute
   PricingRoute: typeof PricingRoute
@@ -306,6 +319,13 @@ declare module '@tanstack/react-router' {
       path: '/linkedin'
       fullPath: '/linkedin'
       preLoaderRoute: typeof LinkedinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal': {
+      id: '/legal'
+      path: '/legal'
+      fullPath: '/legal'
+      preLoaderRoute: typeof LegalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/jobs': {
@@ -394,6 +414,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   GeneratorRoute: GeneratorRoute,
   JobsRoute: JobsRoute,
+  LegalRoute: LegalRoute,
   LinkedinRoute: LinkedinRoute,
   MessagesRoute: MessagesRoute,
   PricingRoute: PricingRoute,
