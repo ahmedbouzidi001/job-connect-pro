@@ -1,5 +1,6 @@
 import { Logo } from "./Logo";
 import { useI18n } from "@/contexts/I18nContext";
+import { Link } from "@tanstack/react-router";
 
 export function Footer() {
   const { t } = useI18n();
@@ -11,11 +12,11 @@ export function Footer() {
           <p className="text-xs text-muted-foreground max-w-xs text-center md:text-start">{t("footer.tagline")}</p>
         </div>
         <div className="flex gap-6 text-xs font-mono text-muted-foreground">
-          <a href="#" className="hover:text-foreground">PRIVACY</a>
-          <a href="#" className="hover:text-foreground">TERMS</a>
-          <a href="#" className="hover:text-foreground">CONTACT</a>
+          <Link to="/legal" hash="privacy" className="hover:text-foreground">PRIVACY</Link>
+          <Link to="/legal" hash="terms" className="hover:text-foreground">TERMS</Link>
+          <Link to="/legal" hash="contact" className="hover:text-foreground">CONTACT</Link>
         </div>
-        <p className="text-[10px] text-muted-foreground font-mono">© 2024 HIREME</p>
+        <p className="text-[10px] text-muted-foreground font-mono">© 2026 HIREME</p>
       </div>
     </footer>
   );

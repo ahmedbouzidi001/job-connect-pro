@@ -107,3 +107,26 @@ export const setPremium = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true, premium_until: until };
   });
+
+/* ---------- Account deletion (RGPD) ---------- */
+export const deleteMyAccount = createServerFn({ method: "POST" })
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // auth.users cascade removes profile/apps/etc via FKs where configured.
+    // Best-effort cleanup for tables without ON DELETE CASCADE on user_id.
+    await Promise.all([
+      supabaseAdmin.from("applications").delete().eq("user_id", userId),
+      supabaseAdmin.from("application_drafts").delete().eq("user_id", userId),
+      supabaseAdmin.from("cv_analyses").delete().eq("user_id", userId),
+      supabaseAdmin.from("learning_paths").delete().eq("user_id", userId),
+      supabaseAdmin.from("job_alerts").delete().eq("user_id", userId),
+      supabaseAdmin.from("job_alert_matches").delete().eq("user_id", userId),
+      supabaseAdmin.from("user_roles").delete().eq("user_id", userId),
+      supabaseAdmin.from("profiles").delete().eq("user_id", userId),
+    ]);
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

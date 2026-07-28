@@ -7,6 +7,9 @@ import { Loader2, Upload, Briefcase, Sparkles, TrendingUp, FileText, Wand2, Link
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { deleteMyAccount } from "@/lib/api/profile.functions";
+import { Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardPage,
@@ -18,6 +21,8 @@ function DashboardPage() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ score: null as number | null, applications: 0, analyses: 0 });
   const [visible, setVisible] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const deleteAccount = useServerFn(deleteMyAccount);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
@@ -44,6 +49,23 @@ function DashboardPage() {
     const { error } = await supabase.from("profiles").update({ recruiter_visible: v }).eq("user_id", user!.id);
     if (error) { toast.error(error.message); setVisible(!v); }
     else toast.success(v ? "Tu es visible par les recruteurs" : "Tu es masqué des recruteurs");
+  };
+
+  const handleDelete = async () => {
+    const first = window.confirm("Supprimer définitivement ton compte ? Cette action est irréversible.");
+    if (!first) return;
+    const second = window.prompt("Tape SUPPRIMER pour confirmer.");
+    if (second !== "SUPPRIMER") return;
+    setDeleting(true);
+    try {
+      await deleteAccount();
+      await supabase.auth.signOut();
+      toast.success("Compte supprimé.");
+      navigate({ to: "/" });
+    } catch (e) {
+      toast.error((e as Error).message);
+      setDeleting(false);
+    }
   };
 
   if (loading || !user) {
@@ -118,6 +140,23 @@ function DashboardPage() {
             </div>
           </div>
           <Switch checked={visible} onCheckedChange={toggleVisible} />
+        </div>
+
+        <div className="glass-panel rounded-2xl p-5 mt-6 flex items-center justify-between gap-4 border-destructive/40">
+          <div className="flex items-center gap-3">
+            <Trash2 className="size-5 text-destructive" />
+            <div>
+              <div className="font-bold text-sm">Supprimer mon compte</div>
+              <p className="text-xs text-muted-foreground">Efface définitivement ton profil, CV, candidatures et messages. Irréversible.</p>
+            </div>
+          </div>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="text-xs font-bold px-4 py-2 rounded-lg border border-destructive/60 text-destructive hover:bg-destructive/10 disabled:opacity-50"
+          >
+            {deleting ? "Suppression…" : "Supprimer"}
+          </button>
         </div>
       </main>
     </div>
