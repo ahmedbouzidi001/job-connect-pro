@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-client-middleware";
 import { z } from "zod";
-import { enforceRateLimit, audit, requirePremium, logError } from "./rate-limit";
+import { enforceRateLimit, audit, logError } from "./rate-limit";
 
 const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
@@ -24,7 +24,6 @@ export const autoApplyToMatches = createServerFn({ method: "POST" })
   }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    await requirePremium(userId, "pro");
     // Rate limit: max 3 batches per minute (each batch can apply to 20 jobs)
     await enforceRateLimit(userId, "auto_apply", 3);
     const { data: profile } = await supabase.from("profiles")
