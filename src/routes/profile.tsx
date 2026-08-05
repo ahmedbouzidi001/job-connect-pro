@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Save, Plus, Trash2, User as UserIcon, Camera, Sparkles } from "lucide-react";
+import { Loader2, Save, Plus, Trash2, User as UserIcon, Camera, Sparkles, Upload, Wand2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { getMyProfile, upsertMyProfile } from "@/lib/api/profile.functions";
+import { getMyProfile, upsertMyProfile, buildProfileFromCv } from "@/lib/api/profile.functions";
+import { extractPdfText } from "@/lib/pdf-parse";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -27,6 +28,8 @@ function ProfilePage() {
   const navigate = useNavigate();
   const fetchProfile = useServerFn(getMyProfile);
   const upsert = useServerFn(upsertMyProfile);
+  const buildFromCv = useServerFn(buildProfileFromCv);
+  const [importing, setImporting] = useState(false);
 
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -85,6 +88,7 @@ function ProfilePage() {
   }, [user, fetchProfile]);
 
   const handleAvatar = async (file: File) => {
+
     if (!user) return;
     if (file.size > 4 * 1024 * 1024) { toast.error("Image trop lourde (4 Mo max)"); return; }
     setUploading(true);
