@@ -106,7 +106,6 @@ function ProfilePage() {
 
   const save = async () => {
     if (!fullName.trim()) { toast.error("Le nom complet est requis"); return; }
-    if (!fullName.trim()) { toast.error("Le nom complet est requis"); return; }
     setSaving(true);
     try {
       await upsert({ data: {
