@@ -170,14 +170,14 @@ function JobsPage() {
   };
 
   const handleAutoApplyAll = async () => {
-    const targets = jobs.filter(j => j.score >= 80);
-    if (targets.length === 0) { toast.error("Aucune offre ≥ 80% — affine ta recherche"); return; }
-    if (!confirm(`Lancer l'auto-candidature sur ${targets.length} offre(s) ≥ 80% ? (réservé Pro/Business)`)) return;
+    const targets = jobs.filter(j => j.score >= 50);
+    if (targets.length === 0) { toast.error("Aucune offre ≥ 50% — affine ta recherche"); return; }
+    if (!confirm(`Lancer l'auto-candidature sur ${targets.length} offre(s) ≥ 50% ? (réservé Pro/Business)`)) return;
     setAutoApplying(true);
     try {
       const r = await autoApply({ data: {
         jobs: targets.map(j => ({ title: j.title, company: j.company, url: j.url, description: j.description?.slice(0, 4000) || j.summary, matchScore: j.score })),
-        language: "fr" as const, minScore: 80,
+        language: "fr" as const, minScore: 50,
       }}) as { applied: number; skipped: number };
       toast.success(`Auto-candidature : ${r.applied} envoyée(s), ${r.skipped} ignorée(s)`);
     } catch (e) { toast.error((e as Error).message); }
@@ -329,10 +329,10 @@ function JobsPage() {
                   {creatingAlert ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Bell className="size-3.5 mr-1.5" />}
                   Créer une alerte
                 </Button>
-                {jobs.some(j => j.score >= 80) && (
+                {jobs.some(j => j.score >= 50) && (
                   <Button onClick={handleAutoApplyAll} disabled={autoApplying} size="sm" className="rounded-full font-bold bg-[color:var(--hyper-lime)] text-black hover:bg-[color:var(--hyper-lime)]/90">
                     {autoApplying ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Rocket className="size-3.5 mr-1.5" />}
-                    Auto-candidater ≥80%
+                    Auto-candidater ≥50%
                   </Button>
                 )}
                 <Button onClick={() => setStep(1)} variant="outline" size="sm" className="rounded-full"><Search className="size-3.5 mr-1.5" /> Nouvelle recherche</Button>
