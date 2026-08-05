@@ -172,7 +172,7 @@ function JobsPage() {
   const handleAutoApplyAll = async () => {
     const targets = jobs.filter(j => j.score >= 50);
     if (targets.length === 0) { toast.error("Aucune offre ≥ 50% — affine ta recherche"); return; }
-    if (!confirm(`Lancer l'auto-candidature sur ${targets.length} offre(s) ≥ 50% ? (réservé Pro/Business)`)) return;
+    if (!confirm(`Lancer l'auto-candidature sur ${targets.length} offre(s) ≥ 50%`)) return;
     setAutoApplying(true);
     try {
       const r = await autoApply({ data: {
