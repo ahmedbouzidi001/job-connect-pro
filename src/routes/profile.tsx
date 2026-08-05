@@ -193,6 +193,7 @@ function ProfilePage() {
 
         <section className="glass-panel rounded-2xl p-6">
           <h2 className="font-bold mb-4">Photo & identité</h2>
+          {/* eslint-disable-next-line */}
         </section>
 
         <section className="glass-panel rounded-2xl p-6">
