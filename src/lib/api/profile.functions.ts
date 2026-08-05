@@ -3,8 +3,6 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-client-middleware";
 import { z } from "zod";
 
-const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-
 const ExperienceSchema = z.object({
   title: z.string().max(200),
   company: z.string().max(200),
