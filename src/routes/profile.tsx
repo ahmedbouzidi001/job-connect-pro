@@ -30,6 +30,7 @@ function ProfilePage() {
   const upsert = useServerFn(upsertMyProfile);
   const buildFromCv = useServerFn(buildProfileFromCv);
   const [importing, setImporting] = useState(false);
+  const [cvPaste, setCvPaste] = useState("");
 
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
