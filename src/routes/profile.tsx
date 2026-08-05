@@ -10,6 +10,7 @@ import { Loader2, Save, Plus, Trash2, User as UserIcon, Camera, Sparkles, Upload
 import { useServerFn } from "@tanstack/react-start";
 import { getMyProfile, upsertMyProfile, buildProfileFromCv } from "@/lib/api/profile.functions";
 import { extractPdfText } from "@/lib/pdf-parse";
+import { AutoApplyCard } from "@/components/profile/AutoApplyCard";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
