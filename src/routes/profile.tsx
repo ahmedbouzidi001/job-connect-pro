@@ -88,7 +88,6 @@ function ProfilePage() {
   }, [user, fetchProfile]);
 
   const handleAvatar = async (file: File) => {
-
     if (!user) return;
     if (file.size > 4 * 1024 * 1024) { toast.error("Image trop lourde (4 Mo max)"); return; }
     setUploading(true);
@@ -102,6 +101,53 @@ function ProfilePage() {
       toast.success("Photo uploadée");
     } catch (e) { toast.error((e as Error).message); }
     finally { setUploading(false); }
+  };
+
+  const applyParsed = (p: Record<string, unknown>) => {
+    if (p.full_name) setFullName(p.full_name as string);
+    if (p.headline) setHeadline(p.headline as string);
+    if (p.bio) setBio(p.bio as string);
+    if (p.target_role) setTargetRole(p.target_role as string);
+    if (p.location) setLocation(p.location as string);
+    if (p.phone) setPhone(p.phone as string);
+    if (p.email_contact) setEmailContact(p.email_contact as string);
+    if (p.website) setWebsite(p.website as string);
+    if (p.experience_years) setYears(Number(p.experience_years));
+    const sk = (p.skills as string[]) ?? []; if (sk.length) setSkillsTxt(sk.join(", "));
+    const lg = (p.languages as string[]) ?? []; if (lg.length) setLangsTxt(lg.join(", "));
+    const links = (p.links as Record<string, string>) ?? {};
+    if (links.linkedin) setLinkedin(links.linkedin);
+    if (links.github) setGithub(links.github);
+    const cv = (p.cv_structured as { experiences?: Experience[]; educations?: Education[]; projects?: Project[]; certifications?: Cert[] }) ?? {};
+    if (cv.experiences?.length) setExperiences(cv.experiences);
+    if (cv.educations?.length) setEducations(cv.educations);
+    if (cv.projects?.length) setProjects(cv.projects);
+    if (cv.certifications?.length) setCerts(cv.certifications);
+  };
+
+  const importFromText = async (text: string) => {
+    if (text.trim().length < 100) { toast.error("CV trop court", { description: "Au moins 100 caractères." }); return; }
+    setImporting(true);
+    try {
+      const res = await buildFromCv({ data: { cvText: text, language: "fr" } });
+      applyParsed((res as { profile: Record<string, unknown> }).profile);
+      toast.success("Profil rempli depuis ton CV", { description: "Vérifie puis enregistre." });
+    } catch (e) { toast.error("Échec de l'analyse", { description: (e as Error).message }); }
+    finally { setImporting(false); }
+  };
+
+  const importFromPdf = async (file: File) => {
+    if (!file.name.toLowerCase().endsWith(".pdf")) { toast.error("Importe un PDF"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error("Fichier trop lourd (10 Mo max)"); return; }
+    setImporting(true);
+    try {
+      const text = await extractPdfText(file);
+      setImporting(false);
+      await importFromText(text);
+    } catch (e) {
+      setImporting(false);
+      toast.error("Extraction impossible", { description: (e as Error).message });
+    }
   };
 
   const save = async () => {
