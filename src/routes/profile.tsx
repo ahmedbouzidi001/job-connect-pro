@@ -191,6 +191,35 @@ function ProfilePage() {
 
         <section className="glass-panel rounded-2xl p-6">
           <h2 className="font-bold mb-4">Photo & identité</h2>
+        </section>
+
+        <section className="glass-panel rounded-2xl p-6">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="size-9 rounded-xl bg-[color:var(--hyper-cyan)]/10 flex items-center justify-center shrink-0">
+              <Wand2 className="size-4 text-[color:var(--hyper-cyan)]" />
+            </div>
+            <div>
+              <h2 className="font-bold">Profil automatique depuis ton CV</h2>
+              <p className="text-sm text-muted-foreground">Importe ton CV : l'IA remplit identité, compétences, expériences, formations, projets et certifications.</p>
+            </div>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <label className={`flex items-center justify-center gap-2 h-24 rounded-2xl border-2 border-dashed border-border bg-card/50 cursor-pointer hover:border-[color:var(--hyper-cyan)]/50 transition-colors ${importing ? "opacity-60 pointer-events-none" : ""}`}>
+              {importing ? <><Loader2 className="size-4 animate-spin" /> <span className="text-sm">Analyse en cours…</span></>
+                : <><Upload className="size-4 text-muted-foreground" /> <span className="text-sm text-muted-foreground">Importer un CV PDF (max 10 Mo)</span></>}
+              <input type="file" accept=".pdf" className="hidden" disabled={importing} onChange={e => e.target.files?.[0] && importFromPdf(e.target.files[0])} />
+            </label>
+            <div className="space-y-2">
+              <Textarea value={cvPaste} onChange={e => setCvPaste(e.target.value)} rows={3} placeholder="… ou colle le texte de ton CV ici" className="font-mono text-xs" />
+              <Button size="sm" variant="outline" className="rounded-full font-bold" disabled={importing || cvPaste.trim().length < 100} onClick={() => importFromText(cvPaste)}>
+                {importing ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Sparkles className="size-3.5 mr-1.5" />} Remplir mon profil
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        <section className="glass-panel rounded-2xl p-6">
+          <h2 className="font-bold mb-4">Photo & identité</h2>
           <div className="flex flex-col sm:flex-row gap-6 items-start">
             <div className="flex flex-col items-center gap-3">
               <div className="size-32 rounded-2xl bg-muted overflow-hidden flex items-center justify-center">
