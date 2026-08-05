@@ -157,6 +157,48 @@ export type Database = {
         }
         Relationships: []
       }
+      auto_apply_settings: {
+        Row: {
+          countries: string[]
+          created_at: string
+          id: string
+          is_active: boolean
+          last_run_at: string | null
+          max_per_run: number
+          min_score: number
+          role_override: string | null
+          total_applied: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          countries?: string[]
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_run_at?: string | null
+          max_per_run?: number
+          min_score?: number
+          role_override?: string | null
+          total_applied?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          countries?: string[]
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_run_at?: string | null
+          max_per_run?: number
+          min_score?: number
+          role_override?: string | null
+          total_applied?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       billing_events: {
         Row: {
           created_at: string
