@@ -109,6 +109,80 @@ export const setPremium = createServerFn({ method: "POST" })
   });
 
 /* ---------- Account deletion (RGPD) ---------- */
+
+/* ---------- Remplissage automatique du profil depuis le CV ---------- */
+export const buildProfileFromCv = createServerFn({ method: "POST" })
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      cvText: z.string().min(100).max(30000),
+      language: z.enum(["fr", "en"]).default("fr"),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const key = process.env.LOVABLE_API_KEY;
+    if (!key) throw new Error("LOVABLE_API_KEY manquant");
+
+    const sys = `Tu es un parseur de CV. Extrait les informations et réponds UNIQUEMENT avec un JSON valide (aucun texte autour), en ${data.language === "fr" ? "français" : "anglais"}, schéma exact :
+{"full_name":"","headline":"","bio":"","target_role":"","location":"","phone":"","email_contact":"","website":"","links":{"linkedin":"","github":""},"experience_years":0,"skills":[],"languages":[],"cv_structured":{"experiences":[{"title":"","company":"","location":"","start":"","end":"","description":"","bullets":[]}],"educations":[{"degree":"","school":"","location":"","start":"","end":"","description":""}],"projects":[{"name":"","description":"","url":""}],"certifications":[{"name":"","issuer":"","year":""}]}}
+Règles : ne jamais inventer une info absente (utiliser "" ou []), dates au format "MM/AAAA" ou "AAAA", 3 à 5 bullets d'impact par expérience, experience_years = estimation entière.`;
+
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: sys },
+          { role: "user", content: data.cvText.slice(0, 24000) },
+        ],
+      }),
+    });
+    if (!res.ok) throw new Error(`Extraction IA indisponible (${res.status})`);
+    const j = await res.json();
+    const raw: string = j?.choices?.[0]?.message?.content ?? "";
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("Impossible de lire la réponse de l'IA. Réessaie.");
+
+    const Parsed = z.object({
+      full_name: z.string().max(120).optional().default(""),
+      headline: z.string().max(200).optional().default(""),
+      bio: z.string().max(2000).optional().default(""),
+      target_role: z.string().max(200).optional().default(""),
+      location: z.string().max(200).optional().default(""),
+      phone: z.string().max(40).optional().default(""),
+      email_contact: z.string().max(200).optional().default(""),
+      website: z.string().max(300).optional().default(""),
+      links: z.record(z.string(), z.string().max(400)).optional().default({}),
+      experience_years: z.coerce.number().min(0).max(60).optional().default(0),
+      skills: z.array(z.string().max(60)).max(40).optional().default([]),
+      languages: z.array(z.string().max(60)).max(15).optional().default([]),
+      cv_structured: CvStructuredSchema,
+    });
+    const p = Parsed.parse(JSON.parse(match[0]));
+
+    const { error } = await supabase.from("profiles").update({
+      full_name: p.full_name || undefined,
+      headline: p.headline || null,
+      bio: p.bio || null,
+      target_role: p.target_role || null,
+      location: p.location || null,
+      phone: p.phone || null,
+      email_contact: p.email_contact || null,
+      website: p.website || null,
+      experience_years: p.experience_years,
+      skills: p.skills,
+      languages: p.languages,
+      links: p.links,
+      cv_structured: p.cv_structured,
+      cv_raw_text: data.cvText.slice(0, 30000),
+    }).eq("user_id", userId);
+    if (error) throw new Error(error.message);
+
+    return { profile: p };
+  });
+
 export const deleteMyAccount = createServerFn({ method: "POST" })
   .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .handler(async ({ context }) => {

@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Save, Plus, Trash2, User as UserIcon, Camera, Sparkles } from "lucide-react";
+import { Loader2, Save, Plus, Trash2, User as UserIcon, Camera, Sparkles, Upload, Wand2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { getMyProfile, upsertMyProfile } from "@/lib/api/profile.functions";
+import { getMyProfile, upsertMyProfile, buildProfileFromCv } from "@/lib/api/profile.functions";
+import { extractPdfText } from "@/lib/pdf-parse";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -27,6 +28,9 @@ function ProfilePage() {
   const navigate = useNavigate();
   const fetchProfile = useServerFn(getMyProfile);
   const upsert = useServerFn(upsertMyProfile);
+  const buildFromCv = useServerFn(buildProfileFromCv);
+  const [importing, setImporting] = useState(false);
+  const [cvPaste, setCvPaste] = useState("");
 
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -100,6 +104,53 @@ function ProfilePage() {
     finally { setUploading(false); }
   };
 
+  const applyParsed = (p: Record<string, unknown>) => {
+    if (p.full_name) setFullName(p.full_name as string);
+    if (p.headline) setHeadline(p.headline as string);
+    if (p.bio) setBio(p.bio as string);
+    if (p.target_role) setTargetRole(p.target_role as string);
+    if (p.location) setLocation(p.location as string);
+    if (p.phone) setPhone(p.phone as string);
+    if (p.email_contact) setEmailContact(p.email_contact as string);
+    if (p.website) setWebsite(p.website as string);
+    if (p.experience_years) setYears(Number(p.experience_years));
+    const sk = (p.skills as string[]) ?? []; if (sk.length) setSkillsTxt(sk.join(", "));
+    const lg = (p.languages as string[]) ?? []; if (lg.length) setLangsTxt(lg.join(", "));
+    const links = (p.links as Record<string, string>) ?? {};
+    if (links.linkedin) setLinkedin(links.linkedin);
+    if (links.github) setGithub(links.github);
+    const cv = (p.cv_structured as { experiences?: Experience[]; educations?: Education[]; projects?: Project[]; certifications?: Cert[] }) ?? {};
+    if (cv.experiences?.length) setExperiences(cv.experiences);
+    if (cv.educations?.length) setEducations(cv.educations);
+    if (cv.projects?.length) setProjects(cv.projects);
+    if (cv.certifications?.length) setCerts(cv.certifications);
+  };
+
+  const importFromText = async (text: string) => {
+    if (text.trim().length < 100) { toast.error("CV trop court", { description: "Au moins 100 caractères." }); return; }
+    setImporting(true);
+    try {
+      const res = await buildFromCv({ data: { cvText: text, language: "fr" } });
+      applyParsed((res as { profile: Record<string, unknown> }).profile);
+      toast.success("Profil rempli depuis ton CV", { description: "Vérifie puis enregistre." });
+    } catch (e) { toast.error("Échec de l'analyse", { description: (e as Error).message }); }
+    finally { setImporting(false); }
+  };
+
+  const importFromPdf = async (file: File) => {
+    if (!file.name.toLowerCase().endsWith(".pdf")) { toast.error("Importe un PDF"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error("Fichier trop lourd (10 Mo max)"); return; }
+    setImporting(true);
+    try {
+      const text = await extractPdfText(file);
+      setImporting(false);
+      await importFromText(text);
+    } catch (e) {
+      setImporting(false);
+      toast.error("Extraction impossible", { description: (e as Error).message });
+    }
+  };
+
   const save = async () => {
     if (!fullName.trim()) { toast.error("Le nom complet est requis"); return; }
     setSaving(true);
@@ -138,6 +189,35 @@ function ProfilePage() {
           <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tighter">Construis le CV qui te ressemble</h1>
           <p className="text-sm text-muted-foreground mt-2">Toutes ces infos alimentent automatiquement tes CV générés et ta visibilité côté recruteur.</p>
         </header>
+
+        <section className="glass-panel rounded-2xl p-6">
+          <h2 className="font-bold mb-4">Photo & identité</h2>
+        </section>
+
+        <section className="glass-panel rounded-2xl p-6">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="size-9 rounded-xl bg-[color:var(--hyper-cyan)]/10 flex items-center justify-center shrink-0">
+              <Wand2 className="size-4 text-[color:var(--hyper-cyan)]" />
+            </div>
+            <div>
+              <h2 className="font-bold">Profil automatique depuis ton CV</h2>
+              <p className="text-sm text-muted-foreground">Importe ton CV : l'IA remplit identité, compétences, expériences, formations, projets et certifications.</p>
+            </div>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <label className={`flex items-center justify-center gap-2 h-24 rounded-2xl border-2 border-dashed border-border bg-card/50 cursor-pointer hover:border-[color:var(--hyper-cyan)]/50 transition-colors ${importing ? "opacity-60 pointer-events-none" : ""}`}>
+              {importing ? <><Loader2 className="size-4 animate-spin" /> <span className="text-sm">Analyse en cours…</span></>
+                : <><Upload className="size-4 text-muted-foreground" /> <span className="text-sm text-muted-foreground">Importer un CV PDF (max 10 Mo)</span></>}
+              <input type="file" accept=".pdf" className="hidden" disabled={importing} onChange={e => e.target.files?.[0] && importFromPdf(e.target.files[0])} />
+            </label>
+            <div className="space-y-2">
+              <Textarea value={cvPaste} onChange={e => setCvPaste(e.target.value)} rows={3} placeholder="… ou colle le texte de ton CV ici" className="font-mono text-xs" />
+              <Button size="sm" variant="outline" className="rounded-full font-bold" disabled={importing || cvPaste.trim().length < 100} onClick={() => importFromText(cvPaste)}>
+                {importing ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Sparkles className="size-3.5 mr-1.5" />} Remplir mon profil
+              </Button>
+            </div>
+          </div>
+        </section>
 
         <section className="glass-panel rounded-2xl p-6">
           <h2 className="font-bold mb-4">Photo & identité</h2>
