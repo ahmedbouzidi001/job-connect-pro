@@ -191,9 +191,10 @@ function ProfilePage() {
           <p className="text-sm text-muted-foreground mt-2">Toutes ces infos alimentent automatiquement tes CV générés et ta visibilité côté recruteur.</p>
         </header>
 
+        <AutoApplyCard />
+
         <section className="glass-panel rounded-2xl p-6">
           <h2 className="font-bold mb-4">Photo & identité</h2>
-          {/* eslint-disable-next-line */}
         </section>
 
         <section className="glass-panel rounded-2xl p-6">
