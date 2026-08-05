@@ -10,6 +10,7 @@ import { Loader2, Save, Plus, Trash2, User as UserIcon, Camera, Sparkles, Upload
 import { useServerFn } from "@tanstack/react-start";
 import { getMyProfile, upsertMyProfile, buildProfileFromCv } from "@/lib/api/profile.functions";
 import { extractPdfText } from "@/lib/pdf-parse";
+import { AutoApplyCard } from "@/components/profile/AutoApplyCard";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -189,6 +190,8 @@ function ProfilePage() {
           <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tighter">Construis le CV qui te ressemble</h1>
           <p className="text-sm text-muted-foreground mt-2">Toutes ces infos alimentent automatiquement tes CV générés et ta visibilité côté recruteur.</p>
         </header>
+
+        <AutoApplyCard />
 
         <section className="glass-panel rounded-2xl p-6">
           <h2 className="font-bold mb-4">Photo & identité</h2>
