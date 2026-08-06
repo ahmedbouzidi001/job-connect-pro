@@ -161,8 +161,10 @@ export type Database = {
         Row: {
           countries: string[]
           created_at: string
+          daily_enabled: boolean
           id: string
           is_active: boolean
+          last_daily_run_date: string | null
           last_run_at: string | null
           max_per_run: number
           min_score: number
@@ -174,8 +176,10 @@ export type Database = {
         Insert: {
           countries?: string[]
           created_at?: string
+          daily_enabled?: boolean
           id?: string
           is_active?: boolean
+          last_daily_run_date?: string | null
           last_run_at?: string | null
           max_per_run?: number
           min_score?: number
@@ -187,8 +191,10 @@ export type Database = {
         Update: {
           countries?: string[]
           created_at?: string
+          daily_enabled?: boolean
           id?: string
           is_active?: boolean
+          last_daily_run_date?: string | null
           last_run_at?: string | null
           max_per_run?: number
           min_score?: number
