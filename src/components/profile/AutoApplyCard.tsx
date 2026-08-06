@@ -27,7 +27,7 @@ export function AutoApplyCard() {
   const [active, setActive] = useState(false);
   const [countries, setCountries] = useState<string[]>(["TN"]);
   const [maxPerRun, setMaxPerRun] = useState(5);
-  const [minScore, setMinScore] = useState(50);
+  const [minScore, setMinScore] = useState(25);
   const [roleOverride, setRoleOverride] = useState("");
   const [stats, setStats] = useState<{ total: number; last: string | null }>({ total: 0, last: null });
 
@@ -38,7 +38,7 @@ export function AutoApplyCard() {
         setActive(Boolean(s.is_active));
         setCountries(((s.countries as string[]) ?? ["TN"]));
         setMaxPerRun((s.max_per_run as number) ?? 5);
-        setMinScore((s.min_score as number) ?? 50);
+        setMinScore((s.min_score as number) ?? 25);
         setRoleOverride((s.role_override as string) ?? "");
         setStats({ total: (s.total_applied as number) ?? 0, last: (s.last_run_at as string) ?? null });
       }
@@ -50,7 +50,7 @@ export function AutoApplyCard() {
   const toggleCountry = (code: string) => {
     setCountries((prev) => prev.includes(code)
       ? (prev.length > 1 ? prev.filter((c) => c !== code) : prev)
-      : (prev.length >= 5 ? (toast.info("5 pays maximum"), prev) : [...prev, code]));
+      : (prev.length >= 10 ? (toast.info("10 pays maximum"), prev) : [...prev, code]));
   };
 
   const persist = async (nextActive = active) => {
@@ -95,7 +95,7 @@ export function AutoApplyCard() {
       </div>
 
       <div className={active ? "" : "opacity-50 pointer-events-none"}>
-        <Label className="mb-2 block text-xs font-bold uppercase">Pays ciblés (max 5)</Label>
+        <Label className="mb-2 block text-xs font-bold uppercase">Pays ciblés (max 10)</Label>
         <div className="flex flex-wrap gap-2 mb-5">
           {COUNTRIES.map((c) => (
             <button key={c.code} type="button" onClick={() => toggleCountry(c.code)}
@@ -114,7 +114,7 @@ export function AutoApplyCard() {
           </div>
           <div>
             <Label className="mb-1.5 block text-xs font-bold uppercase">Score minimum (%)</Label>
-            <Input type="number" min={40} max={95} value={minScore} onChange={(e) => setMinScore(Math.max(40, Math.min(95, Number(e.target.value) || 50)))} />
+            <Input type="number" min={25} max={95} value={minScore} onChange={(e) => setMinScore(Math.max(25, Math.min(95, Number(e.target.value) || 25)))} />
           </div>
           <div>
             <Label className="mb-1.5 block text-xs font-bold uppercase">Poste ciblé (optionnel)</Label>

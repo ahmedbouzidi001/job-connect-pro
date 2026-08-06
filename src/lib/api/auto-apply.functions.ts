@@ -87,9 +87,9 @@ const COUNTRIES = ["TN","FR","MA","DZ","CA","BE","CH","AE","SA","QA","US","UK","
 
 const SettingsInput = z.object({
   is_active: z.boolean(),
-  countries: z.array(z.enum(COUNTRIES)).min(1).max(5),
+  countries: z.array(z.enum(COUNTRIES)).min(1).max(10),
   max_per_run: z.number().int().min(1).max(20),
-  min_score: z.number().int().min(40).max(95).default(50),
+  min_score: z.number().int().min(25).max(95).default(25),
   role_override: z.string().max(160).optional().nullable(),
 });
 
@@ -185,7 +185,7 @@ export const runAutoApplyNow = createServerFn({ method: "POST" })
 
     const targets = candidates.slice(0, 40)
       .map((j, i) => ({ ...j, matchScore: Math.max(0, Math.min(100, Math.round(scores[i] ?? 55))) }))
-      .filter((j) => j.matchScore >= (settings.min_score ?? 50))
+      .filter((j) => j.matchScore >= (settings.min_score ?? 25))
       .sort((a, b) => b.matchScore - a.matchScore)
       .slice(0, settings.max_per_run ?? 5);
 
