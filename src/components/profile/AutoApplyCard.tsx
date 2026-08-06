@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Rocket, Save, Zap } from "lucide-react";
+import { Clock, Loader2, Rocket, Save, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 const COUNTRIES: Array<{ code: string; label: string }> = [
@@ -29,6 +29,7 @@ export function AutoApplyCard() {
   const [maxPerRun, setMaxPerRun] = useState(5);
   const [minScore, setMinScore] = useState(25);
   const [roleOverride, setRoleOverride] = useState("");
+  const [daily, setDaily] = useState(false);
   const [stats, setStats] = useState<{ total: number; last: string | null }>({ total: 0, last: null });
 
   useEffect(() => {
@@ -40,6 +41,7 @@ export function AutoApplyCard() {
         setMaxPerRun((s.max_per_run as number) ?? 5);
         setMinScore((s.min_score as number) ?? 25);
         setRoleOverride((s.role_override as string) ?? "");
+        setDaily(Boolean(s.daily_enabled));
         setStats({ total: (s.total_applied as number) ?? 0, last: (s.last_run_at as string) ?? null });
       }
       setLoaded(true);
@@ -53,10 +55,10 @@ export function AutoApplyCard() {
       : (prev.length >= 10 ? (toast.info("10 pays maximum"), prev) : [...prev, code]));
   };
 
-  const persist = async (nextActive = active) => {
+  const persist = async (nextActive = active, nextDaily = daily) => {
     setSaving(true);
     try {
-      await saveSettings({ data: { is_active: nextActive, countries, max_per_run: maxPerRun, min_score: minScore, role_override: roleOverride || null } });
+      await saveSettings({ data: { is_active: nextActive, countries, max_per_run: maxPerRun, min_score: minScore, role_override: roleOverride || null, daily_enabled: nextDaily } });
       toast.success(nextActive ? "Candidature automatique activée" : "Réglages enregistrés");
     } catch (e) {
       toast.error((e as Error).message);
@@ -105,6 +107,19 @@ export function AutoApplyCard() {
               {c.label}
             </button>
           ))}
+        </div>
+
+        <div className="flex items-start justify-between gap-4 mb-5 rounded-xl border-2 border-[color:var(--hyper-lime)]/25 p-4">
+          <div className="flex items-start gap-3">
+            <Clock className="size-4 mt-0.5 text-[color:var(--hyper-lime)] shrink-0" />
+            <div>
+              <p className="font-bold text-sm">Chaque jour à 8h du matin</p>
+              <p className="text-xs text-muted-foreground">
+                On lance automatiquement la recherche et on postule au maximum d'offres possibles (jusqu'à ta limite par lancement), sans que tu fasses quoi que ce soit.
+              </p>
+            </div>
+          </div>
+          <Switch checked={daily} disabled={!loaded || saving} onCheckedChange={(v) => { setDaily(v); void persist(active, v); }} />
         </div>
 
         <div className="grid sm:grid-cols-3 gap-3">
