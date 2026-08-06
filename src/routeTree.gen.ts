@@ -27,6 +27,7 @@ import { Route as ApplicationsRouteImport } from './routes/applications'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RecruiterJobsJobIdRouteImport } from './routes/recruiter-jobs.$jobId'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe-webhook'
+import { Route as ApiPublicHooksAutoApplyDailyRouteImport } from './routes/api/public/hooks/auto-apply-daily'
 
 const SkillsRoute = SkillsRouteImport.update({
   id: '/skills',
@@ -118,6 +119,12 @@ const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
   path: '/api/public/stripe-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksAutoApplyDailyRoute =
+  ApiPublicHooksAutoApplyDailyRouteImport.update({
+    id: '/api/public/hooks/auto-apply-daily',
+    path: '/api/public/hooks/auto-apply-daily',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByFullPath {
   '/skills': typeof SkillsRoute
   '/recruiter-jobs/$jobId': typeof RecruiterJobsJobIdRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
+  '/api/public/hooks/auto-apply-daily': typeof ApiPublicHooksAutoApplyDailyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -158,6 +166,7 @@ export interface FileRoutesByTo {
   '/skills': typeof SkillsRoute
   '/recruiter-jobs/$jobId': typeof RecruiterJobsJobIdRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
+  '/api/public/hooks/auto-apply-daily': typeof ApiPublicHooksAutoApplyDailyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -179,6 +188,7 @@ export interface FileRoutesById {
   '/skills': typeof SkillsRoute
   '/recruiter-jobs/$jobId': typeof RecruiterJobsJobIdRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
+  '/api/public/hooks/auto-apply-daily': typeof ApiPublicHooksAutoApplyDailyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -201,6 +211,7 @@ export interface FileRouteTypes {
     | '/skills'
     | '/recruiter-jobs/$jobId'
     | '/api/public/stripe-webhook'
+    | '/api/public/hooks/auto-apply-daily'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -221,6 +232,7 @@ export interface FileRouteTypes {
     | '/skills'
     | '/recruiter-jobs/$jobId'
     | '/api/public/stripe-webhook'
+    | '/api/public/hooks/auto-apply-daily'
   id:
     | '__root__'
     | '/'
@@ -241,6 +253,7 @@ export interface FileRouteTypes {
     | '/skills'
     | '/recruiter-jobs/$jobId'
     | '/api/public/stripe-webhook'
+    | '/api/public/hooks/auto-apply-daily'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -261,6 +274,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SkillsRoute: typeof SkillsRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
+  ApiPublicHooksAutoApplyDailyRoute: typeof ApiPublicHooksAutoApplyDailyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -391,6 +405,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicStripeWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/auto-apply-daily': {
+      id: '/api/public/hooks/auto-apply-daily'
+      path: '/api/public/hooks/auto-apply-daily'
+      fullPath: '/api/public/hooks/auto-apply-daily'
+      preLoaderRoute: typeof ApiPublicHooksAutoApplyDailyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -424,16 +445,8 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SkillsRoute: SkillsRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
+  ApiPublicHooksAutoApplyDailyRoute: ApiPublicHooksAutoApplyDailyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
